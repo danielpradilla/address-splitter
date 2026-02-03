@@ -103,11 +103,10 @@ Resources:
                   - s3:DeleteObject
                 Resource: '*'
 
-              # CloudFront invalidation
+              # CloudFront (deploy + invalidation + response headers policy)
               - Effect: Allow
                 Action:
-                  - cloudfront:CreateInvalidation
-                  - cloudfront:GetDistribution
+                  - cloudfront:*
                 Resource: '*'
 
               # Services created by main stack (broad; tighten later)
