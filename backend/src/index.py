@@ -5,6 +5,7 @@ from typing import Any, Dict
 
 import boto3
 
+from aws_location import geocode_with_amazon_location
 from models import list_bedrock_models
 from prompting import render_prompt, validate_template
 from storage import epoch_plus_days, get_submission, list_recent, put_submission, set_preferred, user_settings_table
@@ -210,11 +211,53 @@ def handler(event, context):
         results = {}
         for p in pipelines:
             if p == "bedrock_geonames":
-                results[p] = {"source": "bedrock", "geocode": "geonames_offline", "rendered_prompt": rendered_prompt, "warnings": ["pipeline_not_implemented"], "confidence": 0.0}
+                results[p] = {
+                    "source": "bedrock",
+                    "geocode": "geonames_offline",
+                    "rendered_prompt": rendered_prompt,
+                    "warnings": ["pipeline_not_implemented"],
+                    "confidence": 0.0,
+                }
             elif p == "libpostal_geonames":
-                results[p] = {"source": "libpostal", "geocode": "geonames_offline", "warnings": ["pipeline_not_implemented"], "confidence": 0.0}
+                results[p] = {
+                    "source": "libpostal",
+                    "geocode": "geonames_offline",
+                    "warnings": ["pipeline_not_implemented"],
+                    "confidence": 0.0,
+                }
             elif p == "aws_services":
-                results[p] = {"source": "amazon_location", "geocode": "amazon_location", "warnings": ["pipeline_not_implemented"], "confidence": 0.0}
+                place_index = os.getenv("PLACE_INDEX_NAME", "")
+                if not place_index:
+                    results[p] = {
+                        "source": "amazon_location",
+                        "geocode": "amazon_location",
+                        "warnings": ["missing_place_index"],
+                        "confidence": 0.0,
+                    }
+                else:
+                    geo = geocode_with_amazon_location(
+                        place_index_name=place_index,
+                        text=raw_address,
+                        country=country_code,
+                        region=os.getenv("AWS_REGION_NAME"),
+                    )
+                    comp = geo.get("components") or {}
+                    results[p] = {
+                        "source": "amazon_location",
+                        "geocode": "amazon_location",
+                        "warnings": geo.get("warnings") or [],
+                        "confidence": 0.8 if (geo.get("latitude") is not None and geo.get("longitude") is not None) else 0.0,
+                        "latitude": geo.get("latitude"),
+                        "longitude": geo.get("longitude"),
+                        "geo_accuracy": geo.get("geo_accuracy", "none"),
+                        "address_line1": comp.get("address_line1", ""),
+                        "address_line2": comp.get("address_line2", ""),
+                        "postcode": comp.get("postcode", ""),
+                        "city": comp.get("city", ""),
+                        "state_region": comp.get("state_region", ""),
+                        "country_code": comp.get("country_code", country_code),
+                        "raw": geo.get("raw"),
+                    }
 
         put_submission(
             table_name=table_name,
