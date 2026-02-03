@@ -3,6 +3,8 @@
 
 # Docs not intended for commit
 deployment.md
+docs/SPECS.md
+docs/TASKS.md
 
 # Python
 __pycache__/
