@@ -19,15 +19,28 @@ phases:
   build:
     commands:
       - echo "Deploying CloudFormation stack"
-      - aws cloudformation deploy \
-          --region "$AWS_REGION" \
-          --stack-name "$STACK_NAME-$STAGE" \
-          --template-file infra/cloudformation/main.yaml \
-          --capabilities CAPABILITY_NAMED_IAM \
-          --no-fail-on-empty-changeset
+      - |
+          aws cloudformation deploy \
+            --region "$AWS_REGION" \
+            --stack-name "$STACK_NAME-$STAGE" \
+            --template-file infra/cloudformation/main.yaml \
+            --capabilities CAPABILITY_NAMED_IAM \
+            --no-fail-on-empty-changeset
       - echo "Fetching outputs"
-      - export FRONTEND_BUCKET=$(aws cloudformation describe-stacks --region "$AWS_REGION" --stack-name "$STACK_NAME-$STAGE" --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" --output text)
-      - export DISTRIBUTION_ID=$(aws cloudformation describe-stacks --region "$AWS_REGION" --stack-name "$STACK_NAME-$STAGE" --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" --output text)
+      - |
+          FRONTEND_BUCKET=$(aws cloudformation describe-stacks \
+            --region "$AWS_REGION" \
+            --stack-name "$STACK_NAME-$STAGE" \
+            --query "Stacks[0].Outputs[?OutputKey=='FrontendBucketName'].OutputValue" \
+            --output text)
+          export FRONTEND_BUCKET
+      - |
+          DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+            --region "$AWS_REGION" \
+            --stack-name "$STACK_NAME-$STAGE" \
+            --query "Stacks[0].Outputs[?OutputKey=='CloudFrontDistributionId'].OutputValue" \
+            --output text)
+          export DISTRIBUTION_ID
       - echo "Syncing frontend to S3: $FRONTEND_BUCKET"
       - aws s3 sync frontend/ "s3://$FRONTEND_BUCKET/" --delete
       - echo "Invalidating CloudFront: $DISTRIBUTION_ID"
