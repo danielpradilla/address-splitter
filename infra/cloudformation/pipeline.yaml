@@ -72,6 +72,7 @@ Resources:
                   - cloudformation:DescribeChangeSet
                   - cloudformation:DescribeStackEvents
                   - cloudformation:GetTemplate
+                  - cloudformation:GetTemplateSummary
                   - cloudformation:DeleteChangeSet
                 Resource: '*'
 
