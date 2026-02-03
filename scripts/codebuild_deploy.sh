@@ -4,6 +4,21 @@ set -euo pipefail
 : "${AWS_REGION:?Missing AWS_REGION}"
 : "${STACK_NAME:?Missing STACK_NAME}"
 : "${STAGE:?Missing STAGE}"
+: "${ALLOWED_ORIGINS:=*}"
+
+echo "Packaging Lambda"
+ARTIFACT_BUCKET=$(aws cloudformation describe-stacks \
+  --region "$AWS_REGION" \
+  --stack-name "$STACK_NAME-$STAGE-pipeline" \
+  --query "Stacks[0].Outputs[?OutputKey=='ArtifactBucketName'].OutputValue" \
+  --output text)
+
+LAMBDA_ZIP="/tmp/${STACK_NAME}-${STAGE}-api.zip"
+rm -f "$LAMBDA_ZIP"
+(cd backend/src && zip -r "$LAMBDA_ZIP" .)
+
+LAMBDA_KEY="lambda/${STACK_NAME}-${STAGE}-api.zip"
+aws s3 cp "$LAMBDA_ZIP" "s3://$ARTIFACT_BUCKET/$LAMBDA_KEY"
 
 echo "Deploying CloudFormation stack"
 aws cloudformation deploy \
@@ -11,7 +26,11 @@ aws cloudformation deploy \
   --stack-name "$STACK_NAME-$STAGE" \
   --template-file infra/cloudformation/main.yaml \
   --capabilities CAPABILITY_NAMED_IAM \
-  --no-fail-on-empty-changeset
+  --no-fail-on-empty-changeset \
+  --parameter-overrides \
+      AllowedOrigins="$ALLOWED_ORIGINS" \
+      LambdaCodeS3Bucket="$ARTIFACT_BUCKET" \
+      LambdaCodeS3Key="$LAMBDA_KEY"
 
 echo "Fetching outputs"
 FRONTEND_BUCKET=$(aws cloudformation describe-stacks \

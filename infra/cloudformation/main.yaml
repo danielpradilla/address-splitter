@@ -37,6 +37,14 @@ Parameters:
     Type: String
     Default: ''
     Description: Optional S3 URI (s3://bucket/prefix) where raw GeoNames files are stored
+
+  LambdaCodeS3Bucket:
+    Type: String
+    Description: S3 bucket containing the Lambda zip for the API function
+  LambdaCodeS3Key:
+    Type: String
+    Description: S3 key of the Lambda zip for the API function
+
   LocationDataSource:
     Type: String
     Default: Here
@@ -306,37 +314,8 @@ Resources:
           GEONAMES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesLookupTable, '']
           PLACE_INDEX_NAME: !If [UseAwsServices, !Ref PlaceIndex, '']
       Code:
-        ZipFile: |
-          import json, os, time
-
-          def _resp(status, body, origin='*'):
-              return {
-                  'statusCode': status,
-                  'headers': {
-                      'Content-Type': 'application/json',
-                      'Access-Control-Allow-Origin': origin,
-                      'Access-Control-Allow-Headers': 'authorization,content-type',
-                      'Access-Control-Allow-Methods': 'GET,POST,PUT,OPTIONS',
-                  },
-                  'body': json.dumps(body),
-              }
-
-          def handler(event, context):
-              # Minimal stub to allow infra deploy.
-              # Real implementation will be added in backend/src and packaged later.
-              route_key = (event.get('requestContext') or {}).get('routeKey', '')
-              method = (event.get('requestContext') or {}).get('http', {}).get('method', '')
-
-              if method == 'OPTIONS':
-                  return _resp(204, {}, os.getenv('ALLOWED_ORIGINS','*'))
-
-              if route_key.endswith(' /health'):
-                  return _resp(200, {'ok': True, 'ts': int(time.time())}, os.getenv('ALLOWED_ORIGINS','*'))
-
-              return _resp(501, {
-                  'error': 'not_implemented',
-                  'message': 'API is deployed but endpoints are not implemented yet.'
-              }, os.getenv('ALLOWED_ORIGINS','*'))
+        S3Bucket: !Ref LambdaCodeS3Bucket
+        S3Key: !Ref LambdaCodeS3Key
 
   HttpApi:
     Type: AWS::ApiGatewayV2::Api
