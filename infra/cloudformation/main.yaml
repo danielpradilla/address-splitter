@@ -458,6 +458,8 @@ Resources:
 
   ApiLogGroup:
     Type: AWS::Logs::LogGroup
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
       LogGroupName: !Sub '/aws/lambda/${AppName}-${Stage}-api'
       RetentionInDays: !Ref LogRetentionDays
