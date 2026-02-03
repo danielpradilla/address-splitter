@@ -91,17 +91,10 @@ Resources:
                   - iam:GetRole
                 Resource: '*'
 
-              # S3 sync frontend
+              # S3 (CloudFormation creates buckets; build sync uploads files)
               - Effect: Allow
                 Action:
-                  - s3:ListBucket
-                  - s3:GetBucketLocation
-                Resource: '*'
-              - Effect: Allow
-                Action:
-                  - s3:GetObject
-                  - s3:PutObject
-                  - s3:DeleteObject
+                  - s3:*
                 Resource: '*'
 
               # CloudFront (deploy + invalidation + response headers policy)
