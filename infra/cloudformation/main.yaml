@@ -456,13 +456,8 @@ Resources:
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/*'
 
-  ApiLogGroup:
-    Type: AWS::Logs::LogGroup
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      LogGroupName: !Sub '/aws/lambda/${AppName}-${Stage}-api'
-      RetentionInDays: !Ref LogRetentionDays
+  # NOTE: We intentionally do NOT create the Lambda log group explicitly.
+  # Lambda will auto-create it on first invocation. Retention can be set later.
 
 Outputs:
   FrontendBucketName:
