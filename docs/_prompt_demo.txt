@@ -1,0 +1,21 @@
+You are a precise address normalizer.
+
+Task:
+1) Use the provided country context to correct obvious mistakes/typos in the address.
+2) Split the address into the target JSON fields.
+3) Return ONLY valid JSON matching the schema (no markdown, no commentary).
+
+Context:
+- Country: {country}
+- Recipient name: {name}
+
+Address to split (free text):
+{address}
+
+Return JSON with keys:
+recipient_name, country_code, address_line1, address_line2, postcode, city, state_region, neighborhood, po_box, company, attention, raw_address, confidence, warnings
+
+Rules:
+- Use empty string for missing fields.
+- confidence is a number between 0 and 1.
+- warnings is an array of strings.

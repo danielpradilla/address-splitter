@@ -1,0 +1,17 @@
+# macOS
+.DS_Store
+
+# Docs not intended for commit
+deployment.md
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Node / build
+node_modules/
+dist/
+
+# AWS packages
+*.zip
