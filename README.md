@@ -25,6 +25,27 @@ Addresses are messy. This repo is meant to help compare:
 ## Deployment
 See `deployment.md` (kept local; ignored by git).
 
+### Deploy pipeline without retyping parameters (local-only)
+1. Copy the example env file:
+
+```bash
+cp .env.example .env.local
+```
+
+2. Edit `.env.local` if needed.
+
+3. Load env vars and deploy:
+
+```bash
+source .env.local
+chmod +x scripts/deploy-pipeline.sh
+./scripts/deploy-pipeline.sh
+```
+
+Notes:
+- `.env.local` is ignored by git.
+- `.env.example` is safe to commit.
+
 ## Repo layout
 - `infra/` CloudFormation templates
 - `backend/` Lambda source

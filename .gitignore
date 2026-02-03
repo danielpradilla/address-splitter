@@ -6,6 +6,10 @@ deployment.md
 docs/SPECS.md
 docs/TASKS.md
 
+# Local env (do not commit)
+.env.local
+.env
+
 # Python
 __pycache__/
 *.pyc
