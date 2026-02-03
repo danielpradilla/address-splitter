@@ -307,7 +307,7 @@ Resources:
         Variables:
           APP_NAME: !Ref AppName
           STAGE: !Ref Stage
-          AWS_REGION: !Ref AWS::Region
+          AWS_REGION_NAME: !Ref AWS::Region
           ALLOWED_ORIGINS: !Ref AllowedOrigins
           RESULTS_RETENTION_DAYS: !Ref ResultsRetentionDays
           SUBMISSIONS_TABLE: !Ref SubmissionsTable

@@ -98,7 +98,7 @@ def handler(event, context):
 
     if route_key == "GET /models":
         try:
-            models = list_bedrock_models(region=os.getenv("AWS_REGION"))
+            models = list_bedrock_models(region=os.getenv("AWS_REGION_NAME"))
             return _resp(200, {"models": models})
         except Exception as e:
             return _resp(500, {"error": "bedrock_list_failed", "message": str(e)})
