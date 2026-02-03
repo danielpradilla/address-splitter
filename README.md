@@ -46,6 +46,35 @@ Notes:
 - `.env.local` is ignored by git.
 - `.env.example` is safe to commit.
 
+## Quick auth + API test (Cognito user required)
+After you create a Cognito user (admin-created), you can verify auth + API reachability.
+
+### Get an ID token
+```bash
+export AWS_REGION=eu-central-1
+export COGNITO_APP_CLIENT_ID="<from CloudFormation output CognitoAppClientId>"
+export EMAIL="you@example.com"
+export PASSWORD="your-password"
+
+export ID_TOKEN="$(aws cognito-idp initiate-auth \
+  --region "$AWS_REGION" \
+  --auth-flow USER_PASSWORD_AUTH \
+  --client-id "$COGNITO_APP_CLIENT_ID" \
+  --auth-parameters USERNAME="$EMAIL",PASSWORD="$PASSWORD" \
+  --query 'AuthenticationResult.IdToken' \
+  --output text)"
+
+echo "$ID_TOKEN" | head
+```
+
+### Call /health
+```bash
+export API_BASE_URL="<from CloudFormation output ApiBaseUrl>"
+
+curl -s "$API_BASE_URL/health" \
+  -H "Authorization: Bearer $ID_TOKEN"
+```
+
 ## Repo layout
 - `infra/` CloudFormation templates
 - `backend/` Lambda source
