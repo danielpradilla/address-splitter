@@ -28,7 +28,7 @@ h2 { margin: 0 0 12px; font-size: 18px; }
 
 label { display: block; margin: 10px 0; }
 
-input, select, textarea {
+input[type="text"], select, textarea {
   width: 100%;
   margin-top: 6px;
   padding: 10px 12px;
@@ -36,6 +36,12 @@ input, select, textarea {
   border: 1px solid rgba(0,78,152,0.25);
   background: #ffffff;
   color: var(--ink);
+}
+
+input[type="checkbox"] {
+  width: auto;
+  margin: 0;
+  padding: 0;
 }
 
 textarea { resize: vertical; }
@@ -115,6 +121,19 @@ textarea { resize: vertical; }
   margin-top: 10px;
 }
 .fieldset label { margin: 6px 0; }
+
+/* inline checkboxes */
+.checkboxRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.checkboxRow label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+}
 
 .fieldset.inline {
   padding: 6px 8px;
