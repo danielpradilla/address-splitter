@@ -6,8 +6,10 @@ from typing import Any, Dict
 import boto3
 
 from aws_location import geocode_with_amazon_location
+from bedrock_invoke import invoke_bedrock_json
 from models import list_bedrock_models
 from prompting import render_prompt, validate_template
+from schema import normalize_result
 from storage import epoch_plus_days, get_submission, list_recent, put_submission, set_preferred, user_settings_table
 from ulid_util import new_ulid
 
@@ -255,13 +257,42 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
         results = {}
         for p in pipelines:
             if p == "bedrock_geonames":
-                results[p] = {
-                    "source": "bedrock",
-                    "geocode": "geonames_offline",
-                    "rendered_prompt": rendered_prompt,
-                    "warnings": ["pipeline_not_implemented"],
-                    "confidence": 0.0,
-                }
+                if not model_id:
+                    results[p] = {
+                        "source": "bedrock",
+                        "geocode": "geonames_offline",
+                        "warnings": ["missing_modelId"],
+                        "confidence": 0.0,
+                    }
+                else:
+                    try:
+                        parsed = invoke_bedrock_json(
+                            model_id=model_id,
+                            prompt=rendered_prompt,
+                            region=os.getenv("AWS_REGION_NAME"),
+                        )
+                        norm = normalize_result(
+                            parsed,
+                            fallback={
+                                "recipient_name": recipient_name,
+                                "country_code": country_code,
+                                "raw_address": raw_address,
+                            },
+                        )
+                        norm.update({
+                            "source": "bedrock",
+                            "geocode": "geonames_offline",
+                            "rendered_prompt": rendered_prompt,
+                        })
+                        results[p] = norm
+                    except Exception as e:
+                        results[p] = {
+                            "source": "bedrock",
+                            "geocode": "geonames_offline",
+                            "rendered_prompt": rendered_prompt,
+                            "warnings": ["bedrock_invoke_failed", str(e)],
+                            "confidence": 0.0,
+                        }
             elif p == "libpostal_geonames":
                 results[p] = {
                     "source": "libpostal",
