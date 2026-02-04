@@ -5,22 +5,82 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Address Splitter</title>
   <link rel="stylesheet" href="./styles.css" />
+  <script src="./config.js"></script>
 </head>
 <body>
   <main class="container">
-    <h1>Address Splitter</h1>
-    <p class="muted">
-      Deployed successfully. Frontend implementation is next.
-    </p>
+    <header class="row between center">
+      <div>
+        <h1>Address Splitter</h1>
+        <div class="muted" id="status">…</div>
+      </div>
+      <div class="row gap center">
+        <div class="badge" id="authState">Signed out</div>
+        <button id="btnLogin" class="btn">Sign in</button>
+        <button id="btnLogout" class="btn secondary">Sign out</button>
+      </div>
+    </header>
 
-    <section class="card">
-      <h2>Endpoints</h2>
-      <p>
-        This is a static placeholder page.
-      </p>
-      <ul>
-        <li><code>/health</code> (API) should be reachable once auth is wired.</li>
-      </ul>
+    <div id="error" class="error" style="display:none"></div>
+
+    <section id="app" style="display:none">
+      <div class="grid2">
+        <section class="card">
+          <h2>Input</h2>
+          <label>Name
+            <input id="name" type="text" placeholder="Jane Doe" />
+          </label>
+
+          <label>Country (ISO-2)
+            <select id="country">
+              <option value="">(select)</option>
+              <option value="CH">Switzerland (CH)</option>
+              <option value="DE">Germany (DE)</option>
+              <option value="FR">France (FR)</option>
+              <option value="US">United States (US)</option>
+            </select>
+          </label>
+
+          <label>Address
+            <textarea id="address" rows="6" placeholder="Rue du Rhône 10
+1204 Genève
+Suisse"></textarea>
+          </label>
+
+          <label>Bedrock model (pipeline #1)
+            <select id="modelId"></select>
+          </label>
+
+          <fieldset class="fieldset">
+            <legend>Pipelines</legend>
+            <label><input type="checkbox" id="p1" checked /> 1) Bedrock + GeoNames</label>
+            <label><input type="checkbox" id="p2" checked /> 2) libpostal + GeoNames</label>
+            <label><input type="checkbox" id="p3" checked /> 3) AWS services (Amazon Location)</label>
+          </fieldset>
+
+          <button id="btnSplit" class="btn primary">Split address</button>
+        </section>
+
+        <section class="card">
+          <h2>Prompt template (pipeline #1)</h2>
+          <textarea id="promptTemplate" rows="7"></textarea>
+          <div class="row between center" style="margin-top:10px">
+            <div class="muted">Rendered prompt preview</div>
+            <button id="btnSavePrompt" class="btn">Save</button>
+          </div>
+          <pre id="renderedPrompt" class="pre"></pre>
+        </section>
+      </div>
+
+      <section class="card">
+        <h2>Results (raw)</h2>
+        <pre id="results" class="pre"></pre>
+      </section>
+
+      <section class="card">
+        <h2>Recent (last 10)</h2>
+        <ul id="recent" class="list"></ul>
+      </section>
     </section>
   </main>
 

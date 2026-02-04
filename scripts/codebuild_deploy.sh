@@ -47,6 +47,37 @@ DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
   --output text)
 export DISTRIBUTION_ID
 
+echo "Generating frontend/config.js"
+API_BASE_URL=$(aws cloudformation describe-stacks \
+  --region "$AWS_REGION" \
+  --stack-name "$STACK_NAME-$STAGE" \
+  --query "Stacks[0].Outputs[?OutputKey=='ApiBaseUrl'].OutputValue" \
+  --output text)
+COGNITO_DOMAIN=$(aws cloudformation describe-stacks \
+  --region "$AWS_REGION" \
+  --stack-name "$STACK_NAME-$STAGE" \
+  --query "Stacks[0].Outputs[?OutputKey=='CognitoDomain'].OutputValue" \
+  --output text)
+COGNITO_APP_CLIENT_ID=$(aws cloudformation describe-stacks \
+  --region "$AWS_REGION" \
+  --stack-name "$STACK_NAME-$STAGE" \
+  --query "Stacks[0].Outputs[?OutputKey=='CognitoAppClientId'].OutputValue" \
+  --output text)
+CLOUDFRONT_URL=$(aws cloudformation describe-stacks \
+  --region "$AWS_REGION" \
+  --stack-name "$STACK_NAME-$STAGE" \
+  --query "Stacks[0].Outputs[?OutputKey=='CloudFrontUrl'].OutputValue" \
+  --output text)
+
+cat > frontend/config.js <<EOF
+window.__CONFIG__ = {
+  apiBaseUrl: "${API_BASE_URL}",
+  cognitoDomain: "${COGNITO_DOMAIN}",
+  cognitoClientId: "${COGNITO_APP_CLIENT_ID}",
+  redirectUri: "${CLOUDFRONT_URL}",
+};
+EOF
+
 echo "Syncing frontend to S3 bucket: $FRONTEND_BUCKET"
 aws s3 sync frontend/ "s3://$FRONTEND_BUCKET/" --delete
 

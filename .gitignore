@@ -10,6 +10,9 @@ docs/TASKS.md
 .env.local
 .env
 
+# Frontend runtime config (generated)
+frontend/config.js
+
 # Python
 __pycache__/
 *.pyc
