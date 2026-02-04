@@ -322,6 +322,8 @@ Resources:
                   - !Sub '${SubmissionsTable.Arn}/index/*'
                   - !GetAtt UserSettingsTable.Arn
                   - !If [UseGeonamesOffline, !GetAtt GeonamesLookupTable.Arn, !Ref AWS::NoValue]
+                  - !If [UseGeonamesOffline, !Sub '${GeonamesLookupTable.Arn}/index/*', !Ref AWS::NoValue]
+                  - !If [UseGeonamesOffline, !GetAtt GeonamesCitiesTable.Arn, !Ref AWS::NoValue]
               - Effect: Allow
                 Action:
                   - bedrock:InvokeModel
