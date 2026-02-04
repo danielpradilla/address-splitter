@@ -60,8 +60,11 @@ def main():
                 lat = (row[9] or "").strip()
                 lon = (row[10] or "").strip()
 
+                place_key = place.lower()
                 item = {
                     "PK": f"{cc}#{pc}",
+                    "GSI2PK": f"{cc}#{place_key}",
+                    "GSI2SK": pc,
                     "country_code": cc,
                     "postcode": pc,
                     "place_name": place,

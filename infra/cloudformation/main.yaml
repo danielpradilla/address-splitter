@@ -233,6 +233,23 @@ Resources:
         - AttributeName: user_sub
           KeyType: HASH
 
+  GeonamesCitiesTable:
+    Type: AWS::DynamoDB::Table
+    Condition: UseGeonamesOffline
+    Properties:
+      TableName: !Sub '${AppName}-${Stage}-geonames-cities'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+
   GeonamesLookupTable:
     Type: AWS::DynamoDB::Table
     Condition: UseGeonamesOffline
@@ -242,9 +259,22 @@ Resources:
       AttributeDefinitions:
         - AttributeName: PK
           AttributeType: S
+        - AttributeName: GSI2PK
+          AttributeType: S
+        - AttributeName: GSI2SK
+          AttributeType: S
       KeySchema:
         - AttributeName: PK
           KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: GSI2
+          KeySchema:
+            - AttributeName: GSI2PK
+              KeyType: HASH
+            - AttributeName: GSI2SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
 
   # -----------------
   # Amazon Location (pipeline #3)
@@ -321,6 +351,7 @@ Resources:
           SUBMISSIONS_TABLE: !Ref SubmissionsTable
           USER_SETTINGS_TABLE: !Ref UserSettingsTable
           GEONAMES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesLookupTable, '']
+          GEONAMES_CITIES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesCitiesTable, '']
           PLACE_INDEX_NAME: !If [UseAwsServices, !Ref PlaceIndex, '']
       Code:
         S3Bucket: !Ref LambdaCodeS3Bucket

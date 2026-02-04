@@ -10,7 +10,7 @@ from bedrock_invoke import invoke_bedrock_json
 from models import list_bedrock_models
 from prompting import render_prompt, validate_template
 from cost import estimate_bedrock_cost_usd, estimate_location_cost_usd
-from geonames_lookup import lookup_postcode
+from geonames_lookup import lookup_city_best, lookup_city_to_postcode, lookup_postcode
 from schema import normalize_result
 from storage import epoch_plus_days, get_submission, list_recent, put_submission, set_preferred, user_settings_table
 from ulid_util import new_ulid
@@ -323,8 +323,11 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                             out_per_m=out_rate,
                         )
 
-                        # GeoNames enrichment (postcode centroid)
+                        # GeoNames enrichment
                         geonames_table = os.getenv("GEONAMES_TABLE", "")
+                        geonames_cities = os.getenv("GEONAMES_CITIES_TABLE", "")
+
+                        # 1) Prefer postcode centroid
                         if geonames_table and norm.get("country_code") and norm.get("postcode"):
                             hit = lookup_postcode(
                                 table_name=geonames_table,
@@ -336,6 +339,40 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                                 norm["longitude"] = hit.get("longitude")
                                 norm["geo_accuracy"] = "postcode"
                                 norm["geonames_match"] = f"{hit.get('place_name','')} {hit.get('postcode','')}".strip()
+
+                        # 2) If no postcode but have city+country, pick most populated city match and try to infer postcode
+                        if (
+                            geonames_table
+                            and not norm.get("postcode")
+                            and norm.get("country_code")
+                            and norm.get("city")
+                        ):
+                            city_best = lookup_city_best(
+                                cities_table=geonames_cities,
+                                country_code=norm.get("country_code", ""),
+                                city=norm.get("city", ""),
+                            ) if geonames_cities else None
+
+                            if city_best and city_best.get("latitude") and city_best.get("longitude"):
+                                norm["latitude"] = city_best.get("latitude")
+                                norm["longitude"] = city_best.get("longitude")
+                                norm["geo_accuracy"] = "city"
+                                norm["geonames_match"] = f"{city_best.get('name','')}".strip()
+
+                            pc_hit = lookup_city_to_postcode(
+                                postcodes_table=geonames_table,
+                                country_code=norm.get("country_code", ""),
+                                city=norm.get("city", ""),
+                            )
+                            if pc_hit and pc_hit.get("postcode"):
+                                norm["postcode"] = pc_hit.get("postcode")
+                                # if we now have postcode, upgrade match string
+                                norm["geonames_match"] = f"{pc_hit.get('place_name','')} {pc_hit.get('postcode','')}".strip()
+                                # if lat/lon missing, fill from postcode
+                                if not norm.get("latitude") and pc_hit.get("latitude") and pc_hit.get("longitude"):
+                                    norm["latitude"] = pc_hit.get("latitude")
+                                    norm["longitude"] = pc_hit.get("longitude")
+                                    norm["geo_accuracy"] = "postcode"
 
                         norm.update({
                             "source": "bedrock",

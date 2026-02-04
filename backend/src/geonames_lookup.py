@@ -22,3 +22,39 @@ def lookup_postcode(*, table_name: str, country_code: str, postcode: str) -> dic
     table = boto3.resource("dynamodb").Table(table_name)
     resp = table.get_item(Key={"PK": _pk(country_code, postcode)})
     return resp.get("Item")
+
+
+def lookup_city_best(*, cities_table: str, country_code: str, city: str) -> dict[str, Any] | None:
+    if not cities_table or not country_code or not city:
+        return None
+    cc = country_code.strip().upper()
+    city_key = city.strip().lower()
+    pk = f"{cc}#{city_key}"
+
+    table = boto3.resource("dynamodb").Table(cities_table)
+    resp = table.query(
+        KeyConditionExpression=boto3.dynamodb.conditions.Key("PK").eq(pk),
+        ScanIndexForward=False,
+        Limit=1,
+    )
+    items = resp.get("Items") or []
+    return items[0] if items else None
+
+
+def lookup_city_to_postcode(*, postcodes_table: str, country_code: str, city: str) -> dict[str, Any] | None:
+    """Find any postcode row matching city name via GSI2 (CC#citylower)."""
+    if not postcodes_table or not country_code or not city:
+        return None
+    cc = country_code.strip().upper()
+    city_key = city.strip().lower()
+    gsi_pk = f"{cc}#{city_key}"
+
+    table = boto3.resource("dynamodb").Table(postcodes_table)
+    resp = table.query(
+        IndexName="GSI2",
+        KeyConditionExpression=boto3.dynamodb.conditions.Key("GSI2PK").eq(gsi_pk),
+        ScanIndexForward=True,
+        Limit=1,
+    )
+    items = resp.get("Items") or []
+    return items[0] if items else None
