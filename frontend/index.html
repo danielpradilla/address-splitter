@@ -78,7 +78,20 @@ Suisse"></textarea>
 
       <section class="card">
         <h2>Recent (last 10)</h2>
-        <ul id="recent" class="list"></ul>
+        <div class="tableWrap">
+          <table class="table" id="recentTable">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Input</th>
+                <th>1) Bedrock+GeoNames</th>
+                <th>2) libpostal+GeoNames</th>
+                <th>3) AWS services</th>
+              </tr>
+            </thead>
+            <tbody id="recent"></tbody>
+          </table>
+        </div>
       </section>
     </section>
   </main>

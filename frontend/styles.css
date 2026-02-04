@@ -127,7 +127,27 @@ label.inline {
   margin: 0 6px 0 0;
 }
 
-.list {
-  margin: 0;
-  padding-left: 18px;
+.tableWrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  text-align: left;
+  vertical-align: top;
+  padding: 10px;
+  border-top: 1px solid rgba(0,78,152,0.15);
+}
+
+.table th {
+  font-size: 12px;
+  color: rgba(0,78,152,0.85);
+  position: sticky;
+  top: 0;
+  background: var(--card);
 }

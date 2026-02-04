@@ -139,10 +139,24 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
 
         try:
             items = list_recent(table_name=table_name, user_sub=user_sub, limit=limit)
-            # Return a thin preview list
+            # Return a preview list including per-pipeline summaries (for 3-column recent UI)
             out = []
             for it in items:
                 inp = it.get("input") or {}
+                res = it.get("results") or {}
+
+                def _summ(r: dict | None):
+                    r = r or {}
+                    return {
+                        "address_line1": r.get("address_line1", ""),
+                        "postcode": r.get("postcode", ""),
+                        "city": r.get("city", ""),
+                        "geo_accuracy": r.get("geo_accuracy", ""),
+                        "latitude": r.get("latitude"),
+                        "longitude": r.get("longitude"),
+                        "warnings": r.get("warnings") or [],
+                    }
+
                 out.append(
                     {
                         "submission_id": it.get("submission_id"),
@@ -151,6 +165,11 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         "recipient_name": inp.get("recipient_name"),
                         "raw_address_preview": (inp.get("raw_address") or "").replace("\n", ", ")[:120],
                         "preferred_method": it.get("preferred_method"),
+                        "pipelines": {
+                            "bedrock_geonames": _summ(res.get("bedrock_geonames")),
+                            "libpostal_geonames": _summ(res.get("libpostal_geonames")),
+                            "aws_services": _summ(res.get("aws_services")),
+                        },
                     }
                 )
             return _resp(200, {"items": out})

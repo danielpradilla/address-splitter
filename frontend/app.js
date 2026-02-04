@@ -229,14 +229,48 @@ async function doSplit() {
   await loadRecent();
 }
 
+function fmtPipeline(p) {
+  if (!p) return '';
+  const parts = [p.address_line1, [p.postcode, p.city].filter(Boolean).join(' ')].filter(Boolean);
+  const loc = (p.latitude && p.longitude) ? `(${p.latitude}, ${p.longitude})` : '';
+  const acc = p.geo_accuracy ? `[${p.geo_accuracy}]` : '';
+  const warn = (p.warnings && p.warnings.length) ? `⚠ ${p.warnings.join('; ')}` : '';
+  return [parts.join(' / '), acc, loc, warn].filter(Boolean).join(' ');
+}
+
 async function loadRecent() {
   const data = await apiFetch('/recent?limit=10');
-  const ul = document.querySelector('#recent');
-  ul.innerHTML = '';
+  const tbody = document.querySelector('#recent');
+  tbody.innerHTML = '';
   for (const it of data.items || []) {
-    const li = document.createElement('li');
-    li.textContent = `${it.created_at} — ${it.raw_address_preview} (${it.preferred_method || 'no preferred'})`;
-    ul.appendChild(li);
+    const tr = document.createElement('tr');
+
+    const tdWhen = document.createElement('td');
+    tdWhen.textContent = it.created_at || '';
+
+    const tdInp = document.createElement('td');
+    tdInp.textContent = it.raw_address_preview || '';
+
+    const p1 = it.pipelines?.bedrock_geonames;
+    const p2 = it.pipelines?.libpostal_geonames;
+    const p3 = it.pipelines?.aws_services;
+
+    const td1 = document.createElement('td');
+    td1.textContent = fmtPipeline(p1);
+
+    const td2 = document.createElement('td');
+    td2.textContent = fmtPipeline(p2);
+
+    const td3 = document.createElement('td');
+    td3.textContent = fmtPipeline(p3);
+
+    tr.appendChild(tdWhen);
+    tr.appendChild(tdInp);
+    tr.appendChild(td1);
+    tr.appendChild(td2);
+    tr.appendChild(td3);
+
+    tbody.appendChild(tr);
   }
 }
 
