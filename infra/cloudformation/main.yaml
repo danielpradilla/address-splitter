@@ -337,6 +337,12 @@ Resources:
                 Action:
                   - geo:SearchPlaceIndexForText
                 Resource: '*'
+              # Some Bedrock models/inference profiles require AWS Marketplace subscription checks
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: '*'
 
   ApiFunction:
     Type: AWS::Lambda::Function
