@@ -13,13 +13,14 @@ def estimate_bedrock_cost_usd(*, prompt: str, output_text: str, in_per_m: float,
     return {
         "input_tokens_est": in_tokens,
         "output_tokens_est": out_tokens,
-        "estimated_cost_usd": round(cost, 6),
+        # Keep more precision; per-request costs can be well below 1e-6.
+        "estimated_cost_usd": round(cost, 9),
         "basis": "char_heuristic_v1",
     }
 
 
 def estimate_location_cost_usd(*, per_request: float) -> dict:
     return {
-        "estimated_cost_usd": round(float(per_request), 6),
+        "estimated_cost_usd": round(float(per_request), 9),
         "basis": "per_request",
     }

@@ -12,7 +12,8 @@ def _clean_for_ddb(value: Any):
     # DynamoDB via boto3 does not accept float; use int or string.
     # For our use-case, latitude/longitude can be stored as strings.
     if isinstance(value, float):
-        return format(value, ".8f")
+        # Store as string to satisfy boto3 DDB type constraints (no floats), but keep precision.
+        return format(value, ".12f")
     if isinstance(value, dict):
         return {k: _clean_for_ddb(v) for k, v in value.items()}
     if isinstance(value, list):
