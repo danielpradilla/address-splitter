@@ -107,12 +107,23 @@ textarea { resize: vertical; }
 }
 
 .fieldset {
-  border: 1px solid rgba(34,34,59,0.25);
+  border: 1px solid rgba(0,78,152,0.25);
   border-radius: 12px;
   padding: 10px;
   margin-top: 10px;
 }
 .fieldset label { margin: 6px 0; }
+
+.fieldset.inline {
+  padding: 6px 8px;
+  margin-top: 0;
+}
+label.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 6px 0 0;
+}
 
 .list {
   margin: 0;
