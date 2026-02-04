@@ -3,8 +3,9 @@ FROM public.ecr.aws/lambda/python:3.12
 
 # System deps for building libpostal + python bindings
 RUN dnf -y update && \
+    # Base image often includes curl-minimal; avoid conflicts by installing curl-minimal explicitly.
     dnf -y install git gcc gcc-c++ make automake autoconf libtool pkgconfig \
-      curl tar gzip unzip which file && \
+      curl-minimal tar gzip unzip which file && \
     dnf clean all
 
 # Build + install libpostal
