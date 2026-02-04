@@ -11,7 +11,7 @@ phases:
     runtime-versions:
       python: 3.12
     commands:
-      - pip install -r backend/requirements.txt || true
+      - echo "Install phase (deps handled in Docker build)"
   pre_build:
     commands:
       - echo "Running tests (placeholder)"

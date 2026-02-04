@@ -9,7 +9,8 @@ Users enter:
 The app supports **3 side-by-side pipelines** to split + geocode an address, and stores the results for comparison:
 
 1. **LLM (AWS Bedrock) + downloaded GeoNames**
-2. **libpostal + downloaded GeoNames**
+2. **libpostal (Senzing libpostal data model) + downloaded GeoNames**
+   - Implemented via **Lambda container image** (native libpostal + Python bindings).
 3. **AWS services** (Amazon Location Service for geocoding + structured components)
 
 The goal is to compare accuracy/cost and choose a preferred output.
@@ -89,7 +90,7 @@ Deployment defaults:
 - **Frontend:** Static site hosted on **S3** + **CloudFront**
 - **Backend API:** **API Gateway HTTP API** → **Lambda**
 - **Pipeline #1 (LLM):** AWS Bedrock `InvokeModel` (+ `ListFoundationModels`)
-- **Pipeline #2 (libpostal):** libpostal parsing in Lambda (container image or layer)
+- **Pipeline #2 (libpostal):** libpostal parsing in Lambda **container image** (native deps) using the **Senzing data model**.
 - **Pipeline #3 (AWS services):** Amazon Location Service Place Index (geocode + structured components)
 - **GeoNames (offline):** downloaded GeoNames datasets loaded into DynamoDB lookup tables (used by #1 and #2)
   - Postcodes table: `...-geonames` (PK = `CC#POSTCODE`)

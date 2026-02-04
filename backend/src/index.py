@@ -399,9 +399,9 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         }
             elif p == "libpostal_geonames":
                 try:
-                    from libpostal_stub import parse_address_stub
+                    from libpostal_real import parse_with_libpostal
 
-                    parsed = parse_address_stub(
+                    parsed = parse_with_libpostal(
                         recipient_name=recipient_name,
                         country_code=country_code,
                         raw_address=raw_address,
@@ -466,8 +466,9 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                                 norm["geo_accuracy"] = "postcode"
 
                     norm.update({
-                        "source": "libpostal_stub",
+                        "source": "libpostal",
                         "geocode": "geonames_offline",
+                        "libpostal_parts": parsed.get("libpostal_parts", []),
                     })
                     results[p] = norm
                 except Exception as e:

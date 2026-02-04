@@ -115,6 +115,20 @@ Resources:
                   - ecr:*
                 Resource: '*'
 
+              # ECR push (explicit; keep even if broad permissions above change later)
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:InitiateLayerUpload
+                  - ecr:UploadLayerPart
+                  - ecr:CompleteLayerUpload
+                  - ecr:PutImage
+                  - ecr:CreateRepository
+                  - ecr:DescribeRepositories
+                  - ecr:TagResource
+                Resource: '*'
+
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
@@ -123,9 +137,10 @@ Resources:
       Artifacts:
         Type: CODEPIPELINE
       Environment:
-        ComputeType: BUILD_GENERAL1_SMALL
+        ComputeType: BUILD_GENERAL1_MEDIUM
         Image: aws/codebuild/standard:7.0
         Type: LINUX_CONTAINER
+        PrivilegedMode: true
         EnvironmentVariables:
           - Name: AWS_REGION
             Value: !Ref AwsRegion

@@ -13,7 +13,9 @@ Experiment playground for **parsing / splitting / geocoding postal addresses** a
    - If postcode is present: postcode centroid lookup.
    - If only city is present (and country is known): pick most-populated city match, then infer postcode (choosing the postcode centroid closest to the city centroid).
    - Matching is robust to accents/punctuation/case (ASCII-fold + normalization).
-2. **libpostal splitting + offline GeoNames geocoding** (pipeline scaffolded; parsing TBD)
+2. **libpostal splitting + offline GeoNames geocoding**
+   - Implemented using **real libpostal** inside the API Lambda **container image**.
+   - libpostal model is the **Senzing** data model (baked into the image).
 3. **AWS services** (Amazon Location Service for geocoding + structured components)
 
 Each stored submission includes provenance so you always know which output came from which pipeline.
@@ -84,6 +86,6 @@ curl -s "$API_BASE_URL/health" \
 
 ## Repo layout
 - `infra/` CloudFormation templates
-- `backend/` Lambda source
+- `backend/` Lambda source + Dockerfile (container image; includes libpostal)
 - `frontend/` static site
 - `docs/` additional docs (some files intentionally not tracked)

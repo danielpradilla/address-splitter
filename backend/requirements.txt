@@ -1,2 +1,2 @@
-# Placeholder for backend dependencies
-# Add boto3-stubs or any libs you need later.
+boto3
+postal

@@ -6,20 +6,23 @@ set -euo pipefail
 : "${STAGE:?Missing STAGE}"
 : "${ALLOWED_ORIGINS:=*}"
 
-echo "Packaging Lambda"
-ARTIFACT_BUCKET=$(aws cloudformation describe-stacks \
-  --region "$AWS_REGION" \
-  --stack-name "$STACK_NAME-$STAGE-pipeline" \
-  --query "Stacks[0].Outputs[?OutputKey=='ArtifactBucketName'].OutputValue" \
-  --output text)
-
-LAMBDA_ZIP="/tmp/${STACK_NAME}-${STAGE}-api.zip"
-rm -f "$LAMBDA_ZIP"
-(cd backend/src && zip -r "$LAMBDA_ZIP" . -x "__pycache__/*" "*.pyc")
-
+echo "Building + pushing Lambda container image (libpostal + Senzing model)"
 SRC_VER=${CODEBUILD_RESOLVED_SOURCE_VERSION:-$(date +%s)}
-LAMBDA_KEY="lambda/${STACK_NAME}-${STAGE}-api-${SRC_VER}.zip"
-aws s3 cp "$LAMBDA_ZIP" "s3://$ARTIFACT_BUCKET/$LAMBDA_KEY"
+
+ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+REPO_NAME="${STACK_NAME}-${STAGE}-api"
+ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
+IMAGE_TAG="${SRC_VER}"
+IMAGE_URI="${ECR_URI}:${IMAGE_TAG}"
+
+aws ecr describe-repositories --region "$AWS_REGION" --repository-names "$REPO_NAME" >/dev/null 2>&1 || \
+  aws ecr create-repository --region "$AWS_REGION" --repository-name "$REPO_NAME" >/dev/null
+
+aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+# Build from repo root so Dockerfile can COPY backend/...
+docker build -t "$IMAGE_URI" -f backend/Dockerfile .
+docker push "$IMAGE_URI"
 
 echo "Deploying CloudFormation stack"
 aws cloudformation deploy \
@@ -30,8 +33,7 @@ aws cloudformation deploy \
   --no-fail-on-empty-changeset \
   --parameter-overrides \
       AllowedOrigins="$ALLOWED_ORIGINS" \
-      LambdaCodeS3Bucket="$ARTIFACT_BUCKET" \
-      LambdaCodeS3Key="$LAMBDA_KEY"
+      LambdaImageUri="$IMAGE_URI"
 
 echo "Fetching outputs"
 FRONTEND_BUCKET=$(aws cloudformation describe-stacks \
