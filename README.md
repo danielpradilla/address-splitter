@@ -10,7 +10,10 @@ Experiment playground for **parsing / splitting / geocoding postal addresses** a
 
 ## Pipelines (side-by-side)
 1. **LLM splitting (AWS Bedrock) + offline GeoNames geocoding**
-2. **libpostal splitting + offline GeoNames geocoding**
+   - If postcode is present: postcode centroid lookup.
+   - If only city is present (and country is known): pick most-populated city match, then infer postcode (choosing the postcode centroid closest to the city centroid).
+   - Matching is robust to accents/punctuation/case (ASCII-fold + normalization).
+2. **libpostal splitting + offline GeoNames geocoding** (pipeline scaffolded; parsing TBD)
 3. **AWS services** (Amazon Location Service for geocoding + structured components)
 
 Each stored submission includes provenance so you always know which output came from which pipeline.
@@ -21,6 +24,10 @@ Addresses are messy. This repo is meant to help compare:
 - cost
 - failure modes
 - operational complexity
+
+## Sessions / staying signed in
+- Cognito refresh tokens are configured to last **30 days**.
+- The frontend will automatically refresh tokens when the ID token expires (on 401).
 
 ## Deployment
 See `deployment.md` (kept local; ignored by git).
