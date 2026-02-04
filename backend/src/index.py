@@ -122,8 +122,16 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
 
     if route_key == "GET /models":
         try:
-            models = list_bedrock_models(region=os.getenv("AWS_REGION_NAME"))
-            return _resp(200, {"models": models})
+            region = os.getenv("AWS_REGION_NAME")
+            profiles = []
+            try:
+                from models import list_inference_profiles
+                profiles = list_inference_profiles(region=region)
+            except Exception:
+                profiles = []
+
+            models = list_bedrock_models(region=region)
+            return _resp(200, {"inference_profiles": profiles, "models": models})
         except Exception as e:
             return _resp(500, {"error": "bedrock_list_failed", "message": str(e)})
 

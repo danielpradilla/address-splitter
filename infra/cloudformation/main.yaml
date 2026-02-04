@@ -292,6 +292,8 @@ Resources:
                 Action:
                   - bedrock:InvokeModel
                   - bedrock:ListFoundationModels
+                  - bedrock:ListInferenceProfiles
+                  - bedrock:GetInferenceProfile
                 Resource: '*'
               - Effect: Allow
                 Action:

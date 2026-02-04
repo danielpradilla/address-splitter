@@ -156,12 +156,33 @@ async function loadModels() {
   const sel = document.querySelector('#modelId');
   sel.innerHTML = '<option value="">Loading…</option>';
   const data = await apiFetch('/models');
-  sel.innerHTML = '<option value="">(select a model)</option>';
-  for (const m of data.models || []) {
-    const opt = document.createElement('option');
-    opt.value = m.modelId;
-    opt.textContent = `${m.provider} — ${m.name}`;
-    sel.appendChild(opt);
+  sel.innerHTML = '<option value="">(select)</option>';
+
+  // Prefer inference profiles (work for models that require them)
+  const profs = data.inference_profiles || [];
+  if (profs.length) {
+    const og = document.createElement('optgroup');
+    og.label = 'Inference profiles (recommended)';
+    for (const p of profs) {
+      const opt = document.createElement('option');
+      opt.value = p.arn;
+      opt.textContent = `${p.name}`;
+      og.appendChild(opt);
+    }
+    sel.appendChild(og);
+  }
+
+  const models = data.models || [];
+  if (models.length) {
+    const og2 = document.createElement('optgroup');
+    og2.label = 'Foundation models (may require profile)';
+    for (const m of models) {
+      const opt = document.createElement('option');
+      opt.value = m.modelId;
+      opt.textContent = `${m.provider} — ${m.name}`;
+      og2.appendChild(opt);
+    }
+    sel.appendChild(og2);
   }
 }
 

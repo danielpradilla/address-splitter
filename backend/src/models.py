@@ -1,6 +1,33 @@
 import boto3
 
 
+def list_inference_profiles(region: str | None = None) -> list[dict]:
+    client = boto3.client("bedrock", region_name=region)
+
+    # API name is list_inference_profiles in boto3
+    resp = client.list_inference_profiles()
+
+    profiles = []
+    for p in resp.get("inferenceProfileSummaries", []) or []:
+        arn = p.get("inferenceProfileArn")
+        pid = p.get("inferenceProfileId")
+        name = p.get("inferenceProfileName") or pid or arn
+        if not arn:
+            continue
+        profiles.append(
+            {
+                "id": pid or "",
+                "arn": arn,
+                "name": name,
+                "type": p.get("type") or "",
+                "status": p.get("status") or "",
+            }
+        )
+
+    profiles.sort(key=lambda x: (x.get("type", ""), x.get("name", "")))
+    return profiles
+
+
 def list_bedrock_models(region: str | None = None) -> list[dict]:
     # Use the Bedrock control plane client.
     client = boto3.client("bedrock", region_name=region)
