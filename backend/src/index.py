@@ -124,14 +124,19 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
         try:
             region = os.getenv("AWS_REGION_NAME")
             profiles = []
+            profiles_error = ""
             try:
                 from models import list_inference_profiles
                 profiles = list_inference_profiles(region=region)
-            except Exception:
+            except Exception as e:
+                profiles_error = str(e)
                 profiles = []
 
             models = list_bedrock_models(region=region)
-            return _resp(200, {"inference_profiles": profiles, "models": models})
+            resp = {"inference_profiles": profiles, "models": models}
+            if profiles_error:
+                resp["inference_profiles_error"] = profiles_error
+            return _resp(200, resp)
         except Exception as e:
             return _resp(500, {"error": "bedrock_list_failed", "message": str(e)})
 

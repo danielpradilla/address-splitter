@@ -294,6 +294,8 @@ Resources:
                   - bedrock:ListFoundationModels
                   - bedrock:ListInferenceProfiles
                   - bedrock:GetInferenceProfile
+                  - bedrock:Converse
+                  - bedrock:ConverseStream
                 Resource: '*'
               - Effect: Allow
                 Action:

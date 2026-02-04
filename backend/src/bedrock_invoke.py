@@ -17,6 +17,7 @@ def invoke_bedrock_json(*, model_id: str, prompt: str, region: str | None = None
     brt = boto3.client("bedrock-runtime", region_name=region)
 
     # 1) Converse (best cross-vendor path)
+    converse_err: str | None = None
     try:
         resp = brt.converse(
             modelId=model_id,
@@ -28,11 +29,12 @@ def invoke_bedrock_json(*, model_id: str, prompt: str, region: str | None = None
         if not text:
             raise ValueError("empty_converse_response")
         return json.loads(_extract_json(text))
-    except Exception:
-        pass
+    except Exception as e:
+        converse_err = str(e)
 
     # 2) InvokeModel Anthropic Claude messages format
-    if model_id.startswith("anthropic."):
+    # Also allow inference profile ARNs that contain "anthropic".
+    if model_id.startswith("anthropic.") or "anthropic" in model_id:
         body = {
             "anthropic_version": "bedrock-2023-05-31",
             "max_tokens": 800,
@@ -53,7 +55,7 @@ def invoke_bedrock_json(*, model_id: str, prompt: str, region: str | None = None
             text = raw
         return json.loads(_extract_json(text))
 
-    raise ValueError("no_supported_adapter_for_model")
+    raise ValueError(f"no_supported_adapter_for_model" + (f"; converse_error={converse_err}" if converse_err else ""))
 
 
 def _extract_json(text: str) -> str:
