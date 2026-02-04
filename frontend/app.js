@@ -207,16 +207,20 @@ async function doSplit() {
   setStatus('Splitting…');
 
   const payload = {
-    recipient_name: document.querySelector('#name').value,
-    country_code: document.querySelector('#country').value,
-    raw_address: document.querySelector('#address').value,
-    modelId: document.querySelector('#modelId').value,
+    recipient_name: (document.querySelector('#name').value || '').trim(),
+    country_code: (document.querySelector('#country').value || '').trim(),
+    raw_address: (document.querySelector('#address').value || '').trim(),
+    modelId: (document.querySelector('#modelId').value || '').trim(),
     pipelines: [
       document.querySelector('#p1').checked ? 'bedrock_geonames' : null,
       document.querySelector('#p2').checked ? 'libpostal_geonames' : null,
       document.querySelector('#p3').checked ? 'aws_services' : null,
     ].filter(Boolean),
   };
+
+  if (!payload.recipient_name || !payload.raw_address) {
+    throw new Error('Please fill in Name and Address.');
+  }
 
   const data = await apiFetch('/split', {
     method: 'POST',

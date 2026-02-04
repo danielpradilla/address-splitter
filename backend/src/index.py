@@ -231,8 +231,12 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
         model_id = (data.get("modelId") or "").strip()
         pipelines = data.get("pipelines") or ["bedrock_geonames", "libpostal_geonames", "aws_services"]
 
-        if not recipient_name or not country_code or not raw_address:
-            return _resp(400, {"error": "missing_fields", "required": ["recipient_name","country_code","raw_address"]})
+        if not recipient_name or not raw_address:
+            return _resp(400, {"error": "missing_fields", "required": ["recipient_name","raw_address"], "optional": ["country_code"]})
+
+        if not country_code:
+            # v1 behavior: allow empty country (auto-detect to be implemented in pipeline #1 later).
+            country_code = ""
 
         # prompt render (for future use)
         prompt_t = user_settings_table(settings_table_name).get_item(Key={"user_sub": user_sub}).get("Item", {}).get("prompt_template")
