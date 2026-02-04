@@ -10,6 +10,7 @@ from bedrock_invoke import invoke_bedrock_json
 from models import list_bedrock_models
 from prompting import render_prompt, validate_template
 from cost import estimate_bedrock_cost_usd, estimate_location_cost_usd
+from geonames_lookup import lookup_postcode
 from schema import normalize_result
 from storage import epoch_plus_days, get_submission, list_recent, put_submission, set_preferred, user_settings_table
 from ulid_util import new_ulid
@@ -321,6 +322,20 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                             in_per_m=in_rate,
                             out_per_m=out_rate,
                         )
+
+                        # GeoNames enrichment (postcode centroid)
+                        geonames_table = os.getenv("GEONAMES_TABLE", "")
+                        if geonames_table and norm.get("country_code") and norm.get("postcode"):
+                            hit = lookup_postcode(
+                                table_name=geonames_table,
+                                country_code=norm.get("country_code", ""),
+                                postcode=norm.get("postcode", ""),
+                            )
+                            if hit and hit.get("latitude") and hit.get("longitude"):
+                                norm["latitude"] = hit.get("latitude")
+                                norm["longitude"] = hit.get("longitude")
+                                norm["geo_accuracy"] = "postcode"
+                                norm["geonames_match"] = f"{hit.get('place_name','')} {hit.get('postcode','')}".strip()
 
                         norm.update({
                             "source": "bedrock",
