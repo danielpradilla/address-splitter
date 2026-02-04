@@ -152,6 +152,22 @@ async function loadModels() {
   }
 }
 
+async function loadCountries() {
+  const resp = await fetch('./countries.min.json');
+  if (!resp.ok) throw new Error('Failed to load countries list');
+  const countries = await resp.json();
+
+  const sel = document.querySelector('#country');
+  // preserve first option (auto)
+  sel.innerHTML = '<option value="">Auto-detect from address</option>';
+  for (const c of countries) {
+    const opt = document.createElement('option');
+    opt.value = c.code;
+    opt.textContent = `${c.name} (${c.code})`;
+    sel.appendChild(opt);
+  }
+}
+
 async function loadPrompt() {
   const data = await apiFetch('/prompt');
   document.querySelector('#promptTemplate').value = data.prompt_template || '';
@@ -241,6 +257,7 @@ async function init() {
     document.querySelector('#btnLogout').addEventListener('click', () => logout());
 
     if (tokenStore().get()?.id_token) {
+      await loadCountries();
       await loadModels();
       await loadPrompt();
       await loadRecent();
