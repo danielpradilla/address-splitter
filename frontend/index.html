@@ -15,12 +15,6 @@
         <div class="muted" id="status">…</div>
       </div>
       <div class="row gap center">
-        <fieldset class="fieldset inline" style="margin:0">
-          <legend style="display:none">Pipelines</legend>
-          <label class="inline"><input type="checkbox" id="p1" checked /> 1</label>
-          <label class="inline"><input type="checkbox" id="p2" checked /> 2</label>
-          <label class="inline"><input type="checkbox" id="p3" checked /> 3</label>
-        </fieldset>
         <div class="badge" id="authState">Signed out</div>
         <button id="btnLogin" class="btn">Sign in</button>
         <button id="btnLogout" class="btn secondary">Sign out</button>
@@ -50,6 +44,13 @@ Suisse"></textarea>
           </label>
 
           <button id="btnSplit" class="btn primary">Split address</button>
+
+          <fieldset class="fieldset" style="margin-top:12px">
+            <legend>Pipelines</legend>
+            <label><input type="checkbox" id="p1" checked /> 1) Bedrock + GeoNames</label>
+            <label><input type="checkbox" id="p2" checked /> 2) libpostal + GeoNames</label>
+            <label><input type="checkbox" id="p3" checked /> 3) AWS services (Amazon Location)</label>
+          </fieldset>
         </section>
 
         <section class="card">
