@@ -15,9 +15,10 @@ ARTIFACT_BUCKET=$(aws cloudformation describe-stacks \
 
 LAMBDA_ZIP="/tmp/${STACK_NAME}-${STAGE}-api.zip"
 rm -f "$LAMBDA_ZIP"
-(cd backend/src && zip -r "$LAMBDA_ZIP" .)
+(cd backend/src && zip -r "$LAMBDA_ZIP" . -x "__pycache__/*" "*.pyc")
 
-LAMBDA_KEY="lambda/${STACK_NAME}-${STAGE}-api.zip"
+SRC_VER=${CODEBUILD_RESOLVED_SOURCE_VERSION:-$(date +%s)}
+LAMBDA_KEY="lambda/${STACK_NAME}-${STAGE}-api-${SRC_VER}.zip"
 aws s3 cp "$LAMBDA_ZIP" "s3://$ARTIFACT_BUCKET/$LAMBDA_KEY"
 
 echo "Deploying CloudFormation stack"
