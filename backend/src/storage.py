@@ -8,6 +8,18 @@ def epoch_plus_days(days: int) -> int:
     return int(time.time()) + int(days) * 86400
 
 
+def _clean_for_ddb(value: Any):
+    # DynamoDB via boto3 does not accept float; use int or string.
+    # For our use-case, latitude/longitude can be stored as strings.
+    if isinstance(value, float):
+        return format(value, ".8f")
+    if isinstance(value, dict):
+        return {k: _clean_for_ddb(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_clean_for_ddb(v) for v in value]
+    return value
+
+
 def submissions_table(name: str):
     return boto3.resource("dynamodb").Table(name)
 
@@ -46,7 +58,7 @@ def put_submission(
         "GSI1SK": f"TS#{created_at}#SUB#{submission_id}",
     }
 
-    table.put_item(Item=item)
+    table.put_item(Item=_clean_for_ddb(item))
 
 
 def get_submission(*, table_name: str, user_sub: str, submission_id: str) -> dict | None:
