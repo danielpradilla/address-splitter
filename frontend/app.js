@@ -213,6 +213,11 @@ async function loadPrompt() {
     const tpl = data.prompt_template || '';
     document.querySelector('#promptTemplate').value = tpl;
     sessionStorage.setItem('prompt_template_last', tpl);
+
+    const pricing = data.pricing || {};
+    document.querySelector('#priceIn').value = pricing.bedrock_input_usd_per_million ?? '';
+    document.querySelector('#priceOut').value = pricing.bedrock_output_usd_per_million ?? '';
+    document.querySelector('#priceLoc').value = pricing.location_usd_per_request ?? '';
   } catch (e) {
     const last = sessionStorage.getItem('prompt_template_last') || '';
     document.querySelector('#promptTemplate').value = last;
@@ -221,14 +226,20 @@ async function loadPrompt() {
 
 async function savePrompt() {
   const tpl = document.querySelector('#promptTemplate').value;
+  const pricing = {
+    bedrock_input_usd_per_million: Number(document.querySelector('#priceIn').value || 0),
+    bedrock_output_usd_per_million: Number(document.querySelector('#priceOut').value || 0),
+    location_usd_per_request: Number(document.querySelector('#priceLoc').value || 0),
+  };
+
   await apiFetch('/prompt', {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ prompt_template: tpl }),
+    body: JSON.stringify({ prompt_template: tpl, pricing }),
   });
   // also keep a local fallback
   sessionStorage.setItem('prompt_template_last', tpl);
-  setStatus('Prompt saved.');
+  setStatus('Prompt + pricing saved.');
 }
 
 function renderPromptPreview() {

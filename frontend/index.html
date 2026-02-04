@@ -13,7 +13,7 @@
       <div>
         <h1>Address Splitter</h1>
         <div class="muted" id="status">…</div>
-        <div class="muted" id="version"></div>
+        <div class="muted small" id="version"></div>
       </div>
       <div class="row gap center">
         <div class="badge" id="authState">Signed out</div>
@@ -72,6 +72,19 @@ Suisse"></textarea>
             <button id="btnSavePrompt" class="btn">Save</button>
           </div>
           <pre id="renderedPrompt" class="pre"></pre>
+
+          <h3 style="margin:14px 0 6px">Pricing (estimates, USD)</h3>
+          <div class="grid3">
+            <label>Bedrock input ($/1M tokens)
+              <input id="priceIn" type="text" placeholder="3.00" />
+            </label>
+            <label>Bedrock output ($/1M tokens)
+              <input id="priceOut" type="text" placeholder="15.00" />
+            </label>
+            <label>Amazon Location ($/request)
+              <input id="priceLoc" type="text" placeholder="0.005" />
+            </label>
+          </div>
         </section>
       </div>
 

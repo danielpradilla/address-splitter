@@ -9,6 +9,7 @@ from aws_location import geocode_with_amazon_location
 from bedrock_invoke import invoke_bedrock_json
 from models import list_bedrock_models
 from prompting import render_prompt, validate_template
+from cost import estimate_bedrock_cost_usd, estimate_location_cost_usd
 from schema import normalize_result
 from storage import epoch_plus_days, get_submission, list_recent, put_submission, set_preferred, user_settings_table
 from ulid_util import new_ulid
@@ -70,7 +71,14 @@ def handler(event, context):
         table = ddb.Table(table_name)
         item = table.get_item(Key={"user_sub": user_sub}).get("Item")
         if item and item.get("prompt_template"):
-            return _resp(200, {"prompt_template": item["prompt_template"], "is_default": False})
+            return _resp(
+                200,
+                {
+                    "prompt_template": item["prompt_template"],
+                    "is_default": False,
+                    "pricing": item.get("pricing") or {},
+                },
+            )
 
         # Default demo prompt
         demo = """You are an expert postal address parser and normalizer.
@@ -95,7 +103,13 @@ Output rules (VERY IMPORTANT):
 Return JSON with exactly these keys:
 recipient_name, country_code, address_line1, address_line2, postcode, city, state_region, neighborhood, po_box, company, attention, raw_address, confidence, warnings
 """
-        return _resp(200, {"prompt_template": demo, "is_default": True})
+        # Default pricing estimates (USD)
+        pricing = {
+            "bedrock_input_usd_per_million": 3.0,
+            "bedrock_output_usd_per_million": 15.0,
+            "location_usd_per_request": 0.005,
+        }
+        return _resp(200, {"prompt_template": demo, "is_default": True, "pricing": pricing})
 
     if route_key == "PUT /prompt":
         table_name = os.getenv("USER_SETTINGS_TABLE", "")
@@ -111,13 +125,16 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
             return _resp(400, {"error": "invalid_prompt", "message": "prompt_template must include {address}"})
 
         table = ddb.Table(table_name)
-        table.put_item(
-            Item={
-                "user_sub": user_sub,
-                "prompt_template": prompt,
-                "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            }
-        )
+        pricing = data.get("pricing")
+        item = {
+            "user_sub": user_sub,
+            "prompt_template": prompt,
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        if isinstance(pricing, dict):
+            item["pricing"] = pricing
+
+        table.put_item(Item=item)
         return _resp(200, {"ok": True})
 
     if route_key == "GET /models":
@@ -263,6 +280,9 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
             return _resp(400, {"error": "invalid_prompt", "message": str(e)})
         rendered_prompt = render_prompt(prompt_t, name=recipient_name, country=country_code, address=raw_address)
 
+        # Pricing settings (optional)
+        pricing = user_settings_table(settings_table_name).get_item(Key={"user_sub": user_sub}).get("Item", {}).get("pricing") or {}
+
         submission_id = new_ulid()
         created_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         ttl = epoch_plus_days(int(os.getenv("RESULTS_RETENTION_DAYS", "30")))
@@ -292,10 +312,21 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                                 "raw_address": raw_address,
                             },
                         )
+                        out_text = json.dumps(parsed)
+                        in_rate = float(pricing.get("bedrock_input_usd_per_million") or 0)
+                        out_rate = float(pricing.get("bedrock_output_usd_per_million") or 0)
+                        cost = estimate_bedrock_cost_usd(
+                            prompt=rendered_prompt,
+                            output_text=out_text,
+                            in_per_m=in_rate,
+                            out_per_m=out_rate,
+                        )
+
                         norm.update({
                             "source": "bedrock",
                             "geocode": "geonames_offline",
                             "rendered_prompt": rendered_prompt,
+                            "cost": cost,
                         })
                         results[p] = norm
                     except Exception as e:
@@ -335,6 +366,8 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         region=os.getenv("AWS_REGION_NAME"),
                     )
                     comp = geo.get("components") or {}
+                    per_req = float(pricing.get("location_usd_per_request") or 0)
+                    cost = estimate_location_cost_usd(per_request=per_req)
                     results[p] = {
                         "source": "amazon_location",
                         "geocode": "amazon_location",
@@ -350,6 +383,7 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         "state_region": comp.get("state_region", ""),
                         "country_code": comp.get("country_code", country_code),
                         "raw": geo.get("raw"),
+                        "cost": cost,
                     }
 
         put_submission(
