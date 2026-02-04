@@ -411,10 +411,12 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         "confidence": 0.0,
                     }
                 else:
+                    # Amazon Location FilterCountries expects ISO-3; we currently pass ISO-2 elsewhere,
+                    # so don't pass country filter until we add ISO-2->ISO-3 mapping.
                     geo = geocode_with_amazon_location(
                         place_index_name=place_index,
                         text=raw_address,
-                        country=country_code,
+                        country=None,
                         region=os.getenv("AWS_REGION_NAME"),
                     )
                     comp = geo.get("components") or {}

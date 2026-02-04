@@ -21,8 +21,10 @@ def geocode_with_amazon_location(*, place_index_name: str, text: str, country: s
         "Text": text,
         "MaxResults": 1,
     }
-    if country:
-        params["FilterCountries"] = [country]
+    # Amazon Location expects ISO-3 filter countries. Our app uses ISO-2.
+    # For now, only set FilterCountries if caller passes ISO-3.
+    if country and len(country.strip()) == 3:
+        params["FilterCountries"] = [country.strip().upper()]
 
     resp = client.search_place_index_for_text(**params)
     results = resp.get("Results") or []
