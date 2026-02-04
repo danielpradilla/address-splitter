@@ -16,7 +16,6 @@ RUN git clone https://github.com/openvenues/libpostal.git /tmp/libpostal && \
     ./configure --datadir=/opt/libpostal_data && \
     make -j2 && \
     make install && \
-    ldconfig && \
     rm -rf /tmp/libpostal
 
 # Install Senzing-trained libpostal data model (overlays default model)
