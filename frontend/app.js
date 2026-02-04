@@ -169,8 +169,16 @@ async function loadCountries() {
 }
 
 async function loadPrompt() {
-  const data = await apiFetch('/prompt');
-  document.querySelector('#promptTemplate').value = data.prompt_template || '';
+  // Prefer server-persisted template; fallback to last local value if server errors.
+  try {
+    const data = await apiFetch('/prompt');
+    const tpl = data.prompt_template || '';
+    document.querySelector('#promptTemplate').value = tpl;
+    sessionStorage.setItem('prompt_template_last', tpl);
+  } catch (e) {
+    const last = sessionStorage.getItem('prompt_template_last') || '';
+    document.querySelector('#promptTemplate').value = last;
+  }
 }
 
 async function savePrompt() {
@@ -180,6 +188,8 @@ async function savePrompt() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ prompt_template: tpl }),
   });
+  // also keep a local fallback
+  sessionStorage.setItem('prompt_template_last', tpl);
   setStatus('Prompt saved.');
 }
 

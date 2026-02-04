@@ -1,9 +1,10 @@
 :root {
-  --ink: #22223b;
-  --accent: #4a4e69;
-  --muted: #9a8c98;
-  --card: #c9ada7;
-  --bg: #f2e9e4;
+  --ink: #004e98;
+  --accent: #3a6ea5;
+  --muted: #c0c0c0;
+  --card: #ebebeb;
+  --bg: #ffffff;
+  --primary: #ff6700;
 }
 
 * { box-sizing: border-box; }
@@ -32,8 +33,8 @@ input, select, textarea {
   margin-top: 6px;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(34,34,59,0.25);
-  background: rgba(242,233,228,0.7);
+  border: 1px solid rgba(0,78,152,0.25);
+  background: #ffffff;
   color: var(--ink);
 }
 
@@ -43,7 +44,7 @@ textarea { resize: vertical; }
   padding: 16px;
   border-radius: 14px;
   background: var(--card);
-  box-shadow: 0 1px 0 rgba(0,0,0,0.05);
+  box-shadow: 0 1px 0 rgba(0,0,0,0.06);
 }
 
 .grid2 {
@@ -64,16 +65,16 @@ textarea { resize: vertical; }
 .muted { color: var(--muted); }
 
 .btn {
-  border: 1px solid rgba(34,34,59,0.3);
-  background: rgba(242,233,228,0.85);
+  border: 1px solid rgba(0,78,152,0.25);
+  background: #ffffff;
   padding: 10px 12px;
   border-radius: 10px;
   cursor: pointer;
   color: var(--ink);
 }
 .btn.primary {
-  background: var(--accent);
-  color: var(--bg);
+  background: var(--primary);
+  color: #ffffff;
   border-color: rgba(0,0,0,0.0);
 }
 .btn.secondary {
