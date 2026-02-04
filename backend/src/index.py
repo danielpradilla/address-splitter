@@ -398,12 +398,85 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                             "confidence": 0.0,
                         }
             elif p == "libpostal_geonames":
-                results[p] = {
-                    "source": "libpostal",
-                    "geocode": "geonames_offline",
-                    "warnings": ["pipeline_not_implemented"],
-                    "confidence": 0.0,
-                }
+                try:
+                    from libpostal_stub import parse_address_stub
+
+                    parsed = parse_address_stub(
+                        recipient_name=recipient_name,
+                        country_code=country_code,
+                        raw_address=raw_address,
+                    )
+                    norm = normalize_result(
+                        parsed,
+                        fallback={
+                            "recipient_name": recipient_name,
+                            "country_code": country_code,
+                            "raw_address": raw_address,
+                        },
+                    )
+
+                    # GeoNames enrichment (same strategy as pipeline #1)
+                    geonames_table = os.getenv("GEONAMES_TABLE", "")
+                    geonames_cities = os.getenv("GEONAMES_CITIES_TABLE", "")
+
+                    if geonames_table and norm.get("country_code") and norm.get("postcode"):
+                        hit = lookup_postcode(
+                            table_name=geonames_table,
+                            country_code=norm.get("country_code", ""),
+                            postcode=norm.get("postcode", ""),
+                        )
+                        if hit and hit.get("latitude") and hit.get("longitude"):
+                            norm["latitude"] = hit.get("latitude")
+                            norm["longitude"] = hit.get("longitude")
+                            norm["geo_accuracy"] = "postcode"
+                            norm["geonames_match"] = f"{hit.get('place_name','')} {hit.get('postcode','')}".strip()
+
+                    if (
+                        geonames_table
+                        and not norm.get("postcode")
+                        and norm.get("country_code")
+                        and norm.get("city")
+                    ):
+                        city_best = lookup_city_best(
+                            cities_table=geonames_cities,
+                            country_code=norm.get("country_code", ""),
+                            city=norm.get("city", ""),
+                        ) if geonames_cities else None
+
+                        if city_best and city_best.get("latitude") and city_best.get("longitude"):
+                            norm["latitude"] = city_best.get("latitude")
+                            norm["longitude"] = city_best.get("longitude")
+                            norm["geo_accuracy"] = "city"
+                            norm["geonames_match"] = f"{city_best.get('name','')}".strip()
+
+                        pc_hit = lookup_city_to_postcode_best(
+                            postcodes_table=geonames_table,
+                            country_code=norm.get("country_code", ""),
+                            city=norm.get("city", ""),
+                            city_lat=city_best.get("latitude") if city_best else None,
+                            city_lon=city_best.get("longitude") if city_best else None,
+                            limit=50,
+                        )
+                        if pc_hit and pc_hit.get("postcode"):
+                            norm["postcode"] = pc_hit.get("postcode")
+                            norm["geonames_match"] = f"{pc_hit.get('place_name','')} {pc_hit.get('postcode','')}".strip()
+                            if not norm.get("latitude") and pc_hit.get("latitude") and pc_hit.get("longitude"):
+                                norm["latitude"] = pc_hit.get("latitude")
+                                norm["longitude"] = pc_hit.get("longitude")
+                                norm["geo_accuracy"] = "postcode"
+
+                    norm.update({
+                        "source": "libpostal_stub",
+                        "geocode": "geonames_offline",
+                    })
+                    results[p] = norm
+                except Exception as e:
+                    results[p] = {
+                        "source": "libpostal",
+                        "geocode": "geonames_offline",
+                        "warnings": ["libpostal_failed", str(e)],
+                        "confidence": 0.0,
+                    }
             elif p == "aws_services":
                 place_index = os.getenv("PLACE_INDEX_NAME", "")
                 if not place_index:
