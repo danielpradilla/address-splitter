@@ -294,11 +294,16 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         })
                         results[p] = norm
                     except Exception as e:
+                        msg = str(e)
+                        warnings = ["bedrock_invoke_failed"]
+                        if "inference profile" in msg.lower():
+                            warnings.append("requires_inference_profile")
+                        warnings.append(msg)
                         results[p] = {
                             "source": "bedrock",
                             "geocode": "geonames_offline",
                             "rendered_prompt": rendered_prompt,
-                            "warnings": ["bedrock_invoke_failed", str(e)],
+                            "warnings": warnings,
                             "confidence": 0.0,
                         }
             elif p == "libpostal_geonames":

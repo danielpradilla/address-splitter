@@ -260,7 +260,7 @@ async function doSplit() {
     throw new Error('Please fill in Name and Address.');
   }
   if (payload.pipelines.includes('bedrock_geonames') && !payload.modelId) {
-    throw new Error('Select a Bedrock model for pipeline #1.');
+    throw new Error('Select a Bedrock model or inference profile for pipeline #1.');
   }
 
   const data = await apiFetch('/split', {
