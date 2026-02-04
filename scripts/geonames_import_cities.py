@@ -13,9 +13,27 @@ Usage:
 
 import argparse
 import csv
+import re
 import time
+import unicodedata
 
 import boto3
+
+
+_WS_RE = re.compile(r"\s+")
+_PUNCT_RE = re.compile(r"[^a-z0-9\s]")
+
+
+def normalize_name(s: str) -> str:
+    if not s:
+        return ""
+    s = s.strip().casefold()
+    s = unicodedata.normalize("NFKD", s)
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    s = s.encode("ascii", "ignore").decode("ascii")
+    s = _PUNCT_RE.sub(" ", s)
+    s = _WS_RE.sub(" ", s).strip()
+    return s
 
 
 def main():
@@ -61,7 +79,9 @@ def main():
                 except Exception:
                     pop_i = 0
 
-                city_key = (asciiname or name).lower()
+                city_key = normalize_name(asciiname or name)
+                if not city_key:
+                    continue
                 pk = f"{cc}#{city_key}"
                 sk = f"POP#{pop_i:012d}#ID#{geonameid}"
 
