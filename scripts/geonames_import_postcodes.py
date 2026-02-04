@@ -30,7 +30,10 @@ def main():
     ap.add_argument("--table", required=True)
     ap.add_argument("--region", default=None)
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--countries", default="", help="Comma-separated ISO-2 codes to include (e.g., CH,FR,DE). Empty = all")
     args = ap.parse_args()
+
+    countries = {c.strip().upper() for c in args.countries.split(",") if c.strip()}
 
     ddb = boto3.resource("dynamodb", region_name=args.region)
     table = ddb.Table(args.table)
@@ -47,6 +50,8 @@ def main():
                 cc = (row[0] or "").strip().upper()
                 pc = (row[1] or "").strip()
                 if not cc or not pc:
+                    continue
+                if countries and cc not in countries:
                     continue
 
                 place = (row[2] or "").strip()
