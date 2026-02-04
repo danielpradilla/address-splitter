@@ -69,6 +69,36 @@ function tokenStore() {
   };
 }
 
+async function refreshTokens() {
+  const cfg = getConfig();
+  const tokens = tokenStore().get();
+  if (!tokens?.refresh_token) throw new Error('No refresh token available');
+
+  const body = new URLSearchParams({
+    grant_type: 'refresh_token',
+    client_id: cfg.cognitoClientId,
+    refresh_token: tokens.refresh_token,
+  });
+
+  const resp = await fetch(`${cfg.cognitoDomain}/oauth2/token`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`Refresh failed: ${resp.status} ${t}`);
+  }
+
+  const fresh = await resp.json();
+  // refresh response usually doesn't include refresh_token; keep the old one
+  tokenStore().set({
+    ...tokens,
+    ...fresh,
+    refresh_token: tokens.refresh_token,
+  });
+}
+
 async function startLogin() {
   const cfg = getConfig();
   const verifier = randomVerifier();
@@ -130,11 +160,21 @@ async function apiFetch(path, opts = {}) {
   const tokens = tokenStore().get();
   if (!tokens?.id_token) throw new Error('Not authenticated');
 
-  const headers = Object.assign({}, opts.headers || {}, {
-    Authorization: `Bearer ${tokens.id_token}`,
-  });
+  const doReq = async () => {
+    const t = tokenStore().get();
+    const headers = Object.assign({}, opts.headers || {}, {
+      Authorization: `Bearer ${t.id_token}`,
+    });
+    return await fetch(cfg.apiBaseUrl + path, Object.assign({}, opts, { headers }));
+  };
 
-  const resp = await fetch(cfg.apiBaseUrl + path, Object.assign({}, opts, { headers }));
+  let resp = await doReq();
+  if (resp.status === 401) {
+    // try refresh once
+    await refreshTokens();
+    resp = await doReq();
+  }
+
   const text = await resp.text();
   let data;
   try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }

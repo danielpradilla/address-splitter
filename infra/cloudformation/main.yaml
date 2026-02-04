@@ -173,6 +173,10 @@ Resources:
         - !Sub 'https://${CloudFrontDistribution.DomainName}/'
       LogoutURLs:
         - !Sub 'https://${CloudFrontDistribution.DomainName}/'
+      # Longer-lived sessions via refresh token
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        RefreshToken: days
       ExplicitAuthFlows:
         # Enables CLI standalone Option A via initiate-auth
         - ALLOW_USER_PASSWORD_AUTH
