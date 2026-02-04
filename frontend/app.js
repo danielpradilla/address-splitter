@@ -175,11 +175,15 @@ async function loadModels() {
   const models = data.models || [];
   if (models.length) {
     const og2 = document.createElement('optgroup');
-    og2.label = 'Foundation models (may require profile)';
+    og2.label = 'Foundation models';
     for (const m of models) {
       const opt = document.createElement('option');
       opt.value = m.modelId;
-      opt.textContent = `${m.provider} — ${m.name}`;
+      const supported = !!m.adapter_supported;
+      opt.disabled = !supported;
+      opt.textContent = supported
+        ? `${m.provider} — ${m.name}`
+        : `${m.provider} — ${m.name} (adapter not implemented)`;
       og2.appendChild(opt);
     }
     sel.appendChild(og2);

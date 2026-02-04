@@ -21,6 +21,8 @@ def list_inference_profiles(region: str | None = None) -> list[dict]:
                 "name": name,
                 "type": p.get("type") or "",
                 "status": p.get("status") or "",
+                "adapter_supported": True,
+                "adapter": "converse",
             }
         )
 
@@ -45,11 +47,15 @@ def list_bedrock_models(region: str | None = None) -> list[dict]:
         if out_mods and not (out_mods & {"TEXT"}):
             continue
 
+        provider = (m.get("providerName") or "").strip()
+        supported = provider.lower() in {"anthropic"}
         models.append(
             {
                 "modelId": mid,
-                "provider": m.get("providerName") or "",
+                "provider": provider,
                 "name": m.get("modelName") or mid,
+                "adapter_supported": supported,
+                "adapter": "anthropic" if supported else "unsupported",
             }
         )
 
