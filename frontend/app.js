@@ -37,6 +37,19 @@ function setStatus(msg) {
   if (el) el.textContent = msg;
 }
 
+function renderVersion() {
+  try {
+    const cfg = getConfig();
+    const v = document.querySelector('#version');
+    if (!v) return;
+    const id = cfg.deployId ? String(cfg.deployId).slice(0, 12) : 'unknown';
+    const t = cfg.deployTime || '';
+    v.textContent = `deploy ${id}${t ? ' · ' + t : ''}`;
+  } catch {
+    // ignore
+  }
+}
+
 function setError(msg) {
   const el = document.querySelector('#error');
   if (el) {
@@ -328,4 +341,4 @@ async function init() {
   }
 }
 
-window.addEventListener('DOMContentLoaded', init);
+window.addEventListener('DOMContentLoaded', () => { renderVersion(); init(); });

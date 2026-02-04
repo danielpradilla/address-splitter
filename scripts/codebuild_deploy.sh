@@ -70,12 +70,17 @@ CLOUDFRONT_URL=$(aws cloudformation describe-stacks \
   --query "Stacks[0].Outputs[?OutputKey=='CloudFrontUrl'].OutputValue" \
   --output text)
 
+DEPLOY_ID=${CODEBUILD_RESOLVED_SOURCE_VERSION:-unknown}
+DEPLOY_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
 cat > frontend/config.js <<EOF
 window.__CONFIG__ = {
   apiBaseUrl: "${API_BASE_URL}",
   cognitoDomain: "${COGNITO_DOMAIN}",
   cognitoClientId: "${COGNITO_APP_CLIENT_ID}",
   redirectUri: "${CLOUDFRONT_URL}",
+  deployId: "${DEPLOY_ID}",
+  deployTime: "${DEPLOY_TIME}",
 };
 EOF
 
