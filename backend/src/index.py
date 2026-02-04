@@ -10,7 +10,7 @@ from bedrock_invoke import invoke_bedrock_json
 from models import list_bedrock_models
 from prompting import render_prompt, validate_template
 from cost import estimate_bedrock_cost_usd, estimate_location_cost_usd
-from geonames_lookup import lookup_city_best, lookup_city_to_postcode, lookup_postcode
+from geonames_lookup import lookup_city_best, lookup_city_to_postcode_best, lookup_postcode
 from schema import normalize_result
 from storage import epoch_plus_days, get_submission, list_recent, put_submission, set_preferred, user_settings_table
 from ulid_util import new_ulid
@@ -359,10 +359,13 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                                 norm["geo_accuracy"] = "city"
                                 norm["geonames_match"] = f"{city_best.get('name','')}".strip()
 
-                            pc_hit = lookup_city_to_postcode(
+                            pc_hit = lookup_city_to_postcode_best(
                                 postcodes_table=geonames_table,
                                 country_code=norm.get("country_code", ""),
                                 city=norm.get("city", ""),
+                                city_lat=city_best.get("latitude") if city_best else None,
+                                city_lon=city_best.get("longitude") if city_best else None,
+                                limit=50,
                             )
                             if pc_hit and pc_hit.get("postcode"):
                                 norm["postcode"] = pc_hit.get("postcode")
