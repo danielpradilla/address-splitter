@@ -85,7 +85,13 @@ window.__CONFIG__ = {
 EOF
 
 echo "Syncing frontend to S3 bucket: $FRONTEND_BUCKET"
-aws s3 sync frontend/ "s3://$FRONTEND_BUCKET/" --delete
+# Upload everything except config.js
+aws s3 sync frontend/ "s3://$FRONTEND_BUCKET/" --delete --exclude "config.js"
+
+# Upload config.js with no-cache headers so deployId updates are visible immediately
+aws s3 cp frontend/config.js "s3://$FRONTEND_BUCKET/config.js" \
+  --cache-control "no-store, no-cache, must-revalidate, max-age=0" \
+  --content-type "application/javascript"
 
 echo "Invalidating CloudFront distribution: $DISTRIBUTION_ID"
 aws cloudfront create-invalidation --distribution-id "$DISTRIBUTION_ID" --paths "/*"
