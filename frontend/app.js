@@ -155,6 +155,10 @@ function logout() {
   window.location.assign(url);
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 async function apiFetch(path, opts = {}) {
   const cfg = getConfig();
   const tokens = tokenStore().get();
@@ -168,20 +172,31 @@ async function apiFetch(path, opts = {}) {
     return await fetch(cfg.apiBaseUrl + path, Object.assign({}, opts, { headers }));
   };
 
-  let resp = await doReq();
-  if (resp.status === 401) {
-    // try refresh once
-    await refreshTokens();
-    resp = await doReq();
-  }
+  // Retry a couple of times on transient gateway errors (common during Lambda cold starts / deploys).
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let resp = await doReq();
 
-  const text = await resp.text();
-  let data;
-  try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
-  if (!resp.ok) {
-    throw new Error(data?.message || data?.error || `API error ${resp.status}`);
+    if (resp.status === 401) {
+      // try refresh once
+      await refreshTokens();
+      resp = await doReq();
+    }
+
+    if ([502, 503, 504].includes(resp.status) && attempt < maxAttempts) {
+      setStatus(`Starting… (warming up) [${attempt}/${maxAttempts - 1}]`);
+      await sleep(800 * attempt);
+      continue;
+    }
+
+    const text = await resp.text();
+    let data;
+    try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
+    if (!resp.ok) {
+      throw new Error(data?.message || data?.error || `API error ${resp.status}`);
+    }
+    return data;
   }
-  return data;
 }
 
 function render() {
