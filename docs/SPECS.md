@@ -63,7 +63,7 @@ Non-goals (v1):
    - lat/long + accuracy
    - confidence + warnings
    - raw JSON (collapsible)
-7. User can mark one pipeline result as **Preferred** (stored).
+7. (Optional) User can mark one pipeline result as **Preferred** (stored).
 8. UI also shows **“Recent (last 10)”** submissions for the signed-in user.
    - Recent table shows key structured fields per pipeline (street, city, postal code, state/region, country) plus alerts.
    - Background styling indicates whether all key fields are filled (quick visual scan).
@@ -430,6 +430,6 @@ address-splitter/
 - UI shows **3 side-by-side results** (Bedrock+GeoNames, libpostal+GeoNames, AWS services) and stores them.
 - Model dropdown shows Bedrock text/chat models accessible in the account/region (used by pipeline #1).
 - User can view recents and open a stored submission comparison.
-- User can mark a preferred pipeline.
+- (Optional) User can mark a preferred pipeline.
 - CloudFormation deploys end-to-end with a single command.
 - No raw address or tokens are written to logs by default.

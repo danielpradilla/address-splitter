@@ -132,7 +132,7 @@
    - warnings/confidence
    - raw JSON toggle
    - show rendered Bedrock prompt (pipeline #1)
-   - "Mark preferred" button per column
+   - (Optional) "Mark preferred" button per column
 
 4b. Improve Recent (last 10) UI:
    - Show structured fields per pipeline as separate columns: Street address, City, Postal Code, State/Region, Country.
