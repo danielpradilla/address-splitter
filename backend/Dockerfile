@@ -16,7 +16,10 @@ RUN git clone https://github.com/openvenues/libpostal.git /tmp/libpostal && \
     ./configure --datadir=/opt/libpostal_data && \
     make -j2 && \
     make install && \
-    rm -rf /tmp/libpostal
+    rm -rf /tmp/libpostal && \
+    # Ensure dynamic loader can find libpostal at runtime (Lambda base image lacks ldconfig)
+    (ln -sf /usr/local/lib/libpostal.so.1 /usr/lib64/libpostal.so.1 || true) && \
+    (ln -sf /usr/local/lib/libpostal.so.1 /usr/lib/libpostal.so.1 || true)
 
 # Install Senzing-trained libpostal data model (overlays default model)
 # Docs: https://github.com/Senzing/libpostal-data
@@ -31,6 +34,8 @@ RUN mkdir -p /opt/libpostal_data && \
     rm -f language_classifier.tar.gz libpostal_data.tar.gz parser.tar.gz
 
 ENV LIBPOSTAL_DATA_DIR=/opt/libpostal_data
+# Ensure shared libs (libpostal.so.1) are discoverable
+ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:/usr/lib64:/usr/lib
 
 # Python deps
 COPY backend/requirements.txt ${LAMBDA_TASK_ROOT}/requirements.txt
