@@ -64,7 +64,9 @@ Non-goals (v1):
    - confidence + warnings
    - raw JSON (collapsible)
 7. User can mark one pipeline result as **Preferred** (stored).
-8. UI also shows **“Recent (last 10)”** submissions for the signed-in user; each recent item links to its saved side-by-side comparison.
+8. UI also shows **“Recent (last 10)”** submissions for the signed-in user.
+   - Recent table shows key structured fields per pipeline (street, city, postal code, state/region, country) plus alerts.
+   - Background styling indicates whether all key fields are filled (quick visual scan).
 
 ### 2.2 UX requirements
 - Responsive (mobile + desktop)

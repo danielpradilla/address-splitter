@@ -171,12 +171,28 @@ label.inline {
 .table td {
   text-align: left;
   vertical-align: top;
-  padding: 10px;
+  padding: 8px;
   border-top: 1px solid rgba(0,78,152,0.15);
 }
 
+.table td {
+  font-size: 11px;
+}
+
+/* Visual completeness cue for per-pipeline field cells */
+.cellComplete {
+  background: rgba(0, 180, 0, 0.08);
+}
+.cellIncomplete {
+  background: rgba(255, 103, 0, 0.06);
+}
+
+.cellAlerts {
+  color: rgba(160, 0, 0, 0.95);
+}
+
 .table th {
-  font-size: 12px;
+  font-size: 11px;
   color: rgba(0,78,152,0.85);
   position: sticky;
   top: 0;

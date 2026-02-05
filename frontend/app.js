@@ -325,13 +325,28 @@ async function doSplit() {
   await loadRecent();
 }
 
-function fmtPipeline(p) {
-  if (!p) return '';
-  const parts = [p.address_line1, [p.postcode, p.city].filter(Boolean).join(' ')].filter(Boolean);
-  const loc = (p.latitude && p.longitude) ? `(${p.latitude}, ${p.longitude})` : '';
-  const acc = p.geo_accuracy ? `[${p.geo_accuracy}]` : '';
-  const warn = (p.warnings && p.warnings.length) ? `⚠ ${p.warnings.join('; ')}` : '';
-  return [parts.join(' / '), acc, loc, warn].filter(Boolean).join(' ');
+function isFilled(v) {
+  return v !== undefined && v !== null && String(v).trim() !== '';
+}
+
+function pipelineComplete(p) {
+  if (!p) return false;
+  // minimal “all fields filled” check for quick visual scan
+  return ['address_line1', 'city', 'postcode', 'state_region', 'country_code'].every(k => isFilled(p[k]));
+}
+
+function tdText(text, cls = '') {
+  const td = document.createElement('td');
+  td.textContent = text || '';
+  if (cls) td.className = cls;
+  return td;
+}
+
+function tdAlerts(warnings) {
+  const td = document.createElement('td');
+  td.className = 'cellAlerts';
+  td.textContent = (warnings && warnings.length) ? warnings.join('; ') : '';
+  return td;
 }
 
 async function loadRecent() {
@@ -351,20 +366,42 @@ async function loadRecent() {
     const p2 = it.pipelines?.libpostal_geonames;
     const p3 = it.pipelines?.aws_services;
 
-    const td1 = document.createElement('td');
-    td1.textContent = fmtPipeline(p1);
-
-    const td2 = document.createElement('td');
-    td2.textContent = fmtPipeline(p2);
-
-    const td3 = document.createElement('td');
-    td3.textContent = fmtPipeline(p3);
+    const cls1 = pipelineComplete(p1) ? 'cellComplete' : 'cellIncomplete';
+    const cls2 = pipelineComplete(p2) ? 'cellComplete' : 'cellIncomplete';
+    const cls3 = pipelineComplete(p3) ? 'cellComplete' : 'cellIncomplete';
 
     tr.appendChild(tdWhen);
     tr.appendChild(tdInp);
-    tr.appendChild(td1);
-    tr.appendChild(td2);
-    tr.appendChild(td3);
+
+    // Pipeline 1 fields
+    tr.appendChild(tdText(p1?.address_line1, cls1));
+    tr.appendChild(tdText(p1?.city, cls1));
+    tr.appendChild(tdText(p1?.postcode, cls1));
+    tr.appendChild(tdText(p1?.state_region, cls1));
+    tr.appendChild(tdText(p1?.country_code, cls1));
+    const a1 = tdAlerts(p1?.warnings);
+    a1.classList.add(cls1);
+    tr.appendChild(a1);
+
+    // Pipeline 2 fields
+    tr.appendChild(tdText(p2?.address_line1, cls2));
+    tr.appendChild(tdText(p2?.city, cls2));
+    tr.appendChild(tdText(p2?.postcode, cls2));
+    tr.appendChild(tdText(p2?.state_region, cls2));
+    tr.appendChild(tdText(p2?.country_code, cls2));
+    const a2 = tdAlerts(p2?.warnings);
+    a2.classList.add(cls2);
+    tr.appendChild(a2);
+
+    // Pipeline 3 fields
+    tr.appendChild(tdText(p3?.address_line1, cls3));
+    tr.appendChild(tdText(p3?.city, cls3));
+    tr.appendChild(tdText(p3?.postcode, cls3));
+    tr.appendChild(tdText(p3?.state_region, cls3));
+    tr.appendChild(tdText(p3?.country_code, cls3));
+    const a3 = tdAlerts(p3?.warnings);
+    a3.classList.add(cls3);
+    tr.appendChild(a3);
 
     tbody.appendChild(tr);
   }

@@ -184,6 +184,8 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         "address_line1": r.get("address_line1", ""),
                         "postcode": r.get("postcode", ""),
                         "city": r.get("city", ""),
+                        "state_region": r.get("state_region", ""),
+                        "country_code": r.get("country_code", ""),
                         "geo_accuracy": r.get("geo_accuracy", ""),
                         "latitude": r.get("latitude"),
                         "longitude": r.get("longitude"),

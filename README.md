@@ -6,7 +6,7 @@ Experiment playground for **parsing / splitting / geocoding postal addresses** a
 - Simple web UI where you paste a free-text address (plus name + country)
 - Runs **multiple pipelines** to split the address into structured fields
 - Runs **geocoding** to produce latitude/longitude
-- Stores results so you can review the **most recent submissions** and compare quality over time
+- Stores results so you can review the **most recent submissions** and compare quality over time (Recent table shows key fields per pipeline + alerts, with completeness highlighting)
 
 ## Pipelines (side-by-side)
 1. **LLM splitting (AWS Bedrock) + offline GeoNames geocoding**
