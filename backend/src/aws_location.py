@@ -1,5 +1,24 @@
 import boto3
 
+try:
+    from iso3166 import countries as _iso_countries
+except Exception:  # pragma: no cover
+    _iso_countries = None
+
+
+def _to_iso3(country: str) -> str | None:
+    if not country:
+        return None
+    c = country.strip().upper()
+    if len(c) == 3:
+        return c
+    if len(c) == 2 and _iso_countries is not None:
+        try:
+            return _iso_countries.get(c).alpha3
+        except Exception:
+            return None
+    return None
+
 
 def geocode_with_amazon_location(*, place_index_name: str, text: str, country: str | None = None, region: str | None = None) -> dict:
     """Return a normalized geocoding result from Amazon Location Service.
@@ -21,10 +40,10 @@ def geocode_with_amazon_location(*, place_index_name: str, text: str, country: s
         "Text": text,
         "MaxResults": 1,
     }
-    # Amazon Location expects ISO-3 filter countries. Our app uses ISO-2.
-    # For now, only set FilterCountries if caller passes ISO-3.
-    if country and len(country.strip()) == 3:
-        params["FilterCountries"] = [country.strip().upper()]
+    # Amazon Location expects ISO-3 filter countries; UI/app uses ISO-2.
+    iso3 = _to_iso3(country or "")
+    if iso3:
+        params["FilterCountries"] = [iso3]
 
     resp = client.search_place_index_for_text(**params)
     results = resp.get("Results") or []

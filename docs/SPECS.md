@@ -370,7 +370,7 @@ Lambda should:
   - Marketplace (some Bedrock inference profiles): `aws-marketplace:ViewSubscriptions`, `aws-marketplace:Subscribe`.
 
 Notes:
-- Amazon Location `FilterCountries` expects ISO-3; the app country context is ISO-2. Current implementation only applies the filter if an ISO-3 code is provided.
+- Amazon Location `FilterCountries` expects ISO-3; the app country context is ISO-2. The backend maps ISO-2 → ISO-3 (via `iso3166`) before calling Amazon Location.
 
 ### 7.6 Retention
 - CloudWatch logs retention: parameterized (default 14 days)
