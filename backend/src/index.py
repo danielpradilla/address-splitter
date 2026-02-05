@@ -71,11 +71,31 @@ def handler(event, context):
             return _resp(500, {"error": "missing_config", "field": "USER_SETTINGS_TABLE"})
         table = ddb.Table(table_name)
         item = table.get_item(Key={"user_sub": user_sub}).get("Item")
+        def _sanitize_prompt(tpl: str) -> str:
+            # Backward-compat: strip deprecated {name} placeholder and any related lines.
+            if not tpl:
+                return tpl
+            tpl2 = tpl
+            tpl2 = tpl2.replace("- Recipient name: {name}\n", "")
+            tpl2 = tpl2.replace("Recipient name: {name}\n", "")
+            tpl2 = tpl2.replace("{name}", "")
+            return tpl2
+
         if item and item.get("prompt_template"):
+            tpl = item["prompt_template"]
+            tpl2 = _sanitize_prompt(tpl)
+            if tpl2 != tpl:
+                table.update_item(
+                    Key={"user_sub": user_sub},
+                    UpdateExpression="SET prompt_template = :t",
+                    ExpressionAttributeValues={":t": tpl2},
+                )
+                tpl = tpl2
+
             return _resp(
                 200,
                 {
-                    "prompt_template": item["prompt_template"],
+                    "prompt_template": tpl,
                     "is_default": False,
                     "pricing": item.get("pricing") or {},
                 },
@@ -121,6 +141,10 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
         except Exception:
             return _resp(400, {"error": "invalid_json"})
         prompt = (data.get("prompt_template") or "").strip()
+        # Backward-compat: auto-strip deprecated placeholder
+        prompt = prompt.replace("{name}", "")
+        prompt = prompt.replace("- Recipient name: {name}\n", "")
+        prompt = prompt.replace("Recipient name: {name}\n", "")
         try:
             validate_template(prompt)
         except Exception as e:
