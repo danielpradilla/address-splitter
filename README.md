@@ -1,5 +1,8 @@
 # address-splitter
 
+## License
+MIT (see `LICENSE`).
+
 Experiment playground for **parsing / splitting / geocoding postal addresses** and comparing approaches side-by-side.
 
 ## What it does
