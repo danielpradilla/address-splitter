@@ -344,7 +344,8 @@ Resources:
   ApiFunction:
     Type: AWS::Lambda::Function
     Properties:
-      FunctionName: !Sub '${AppName}-${Stage}-api'
+      # NOTE: Do not set FunctionName. Switching from Zip->Image requires replacement and
+      # CloudFormation cannot replace a custom-named function in-place.
       PackageType: Image
       Code:
         ImageUri: !Ref LambdaImageUri
