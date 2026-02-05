@@ -181,14 +181,15 @@ label.inline {
 
 /* Visual completeness cue for per-pipeline field cells */
 .cellComplete {
-  background: rgba(0, 180, 0, 0.08);
+  /* use palette-derived tones (no green/orange) */
+  background: rgba(74, 78, 105, 0.10); /* #4a4e69 */
 }
 .cellIncomplete {
-  background: rgba(255, 103, 0, 0.06);
+  background: rgba(201, 173, 167, 0.18); /* #c9ada7 */
 }
 
 .cellAlerts {
-  color: rgba(160, 0, 0, 0.95);
+  color: rgba(34, 34, 59, 0.95); /* #22223b */
 }
 
 .table th {
