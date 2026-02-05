@@ -76,7 +76,7 @@
    - Run selected pipelines and store outputs under that submission.
 
    Pipeline #1 (Bedrock + GeoNames):
-   - load prompt template; validate + render with `{name}`, `{country}`, `{address}`
+   - load prompt template; validate + render with `{country}`, `{address}`
    - call Bedrock; parse/validate JSON
    - geocode via offline GeoNames (prefer `(country_code, postcode)` fallback `(country_code, city)`)
 
@@ -115,11 +115,10 @@
 2. Add prompt UI:
    - Fetch saved prompt via `GET /prompt` on load
    - Show editable textarea for the prompt template
-   - Show a live “Rendered prompt” preview (substitute `{name}`, `{country}`, `{address}`)
+   - Show a live “Rendered prompt” preview (substitute `{country}`, `{address}`)
    - Save button → `PUT /prompt`
    - On first run, show the demo prompt returned by API (`is_default=true`)
 3. Build core UI:
-   - Name input
    - Country select (show name + ISO-2)
    - Address textarea
    - Model select (populated via `/models`, used for pipeline #1)

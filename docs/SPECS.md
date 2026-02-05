@@ -2,7 +2,6 @@
 
 ## 1) Problem / Goal
 Users enter:
-- **Name** (single field)
 - **Country** (selection)
 - **Free-text address** (multi-line)
 
@@ -16,7 +15,6 @@ The app supports **3 side-by-side pipelines** to split + geocode an address, and
 The goal is to compare accuracy/cost and choose a preferred output.
 
 Primary output fields (baseline):
-- `recipient_name`
 - `country_code` (ISO-3166-1 alpha-2)
 - `address_line1` (street + number)
 - `address_line2` (apt/unit/building, etc.)
@@ -42,7 +40,7 @@ GeoNames enrichment logic (current):
 - Else if we have `country_code` + `city`: 
   - pick the **most populated** city match (offline GeoNames cities table)
   - if multiple postcodes match the city, pick the postcode centroid **closest** to the selected city centroid.
-- Name matching uses normalization: casefolding, ASCII folding (strip accents), punctuation removal, and whitespace collapsing.
+- Place/city name matching uses normalization: casefolding, ASCII folding (strip accents), punctuation removal, and whitespace collapsing.
 
 Non-goals (v1):
 - Full postal validation against carrier databases
@@ -52,7 +50,7 @@ Non-goals (v1):
 ## 2) Users & UX
 ### 2.1 Flow
 1. User opens web page and signs in.
-2. User enters Name, chooses Country, pastes free-text address.
+2. User chooses Country (optional), pastes free-text address.
 3. User selects:
    - Bedrock model (used by pipeline #1)
    - which pipelines to run (default: all 3)
@@ -73,7 +71,7 @@ Non-goals (v1):
 - Fast first load (static hosting)
 - Clear error messages (permissions, model unavailable, throttling)
 - Prompt template editor (pipeline #1):
-  - Supports variable placeholders: `{name}`, `{country}`, `{address}`
+  - Supports variable placeholders: `{country}`, `{address}`
   - Shows a live “Rendered prompt” preview
   - Persisted per-user across sessions
   - First run gets a sensible default prompt (demo prompt)
@@ -162,7 +160,6 @@ Runs the selected pipelines (default all 3), stores the comparison, and returns 
 Request:
 ```json
 {
-  "recipient_name": "Jane Doe",
   "country_code": "CH",
   "raw_address": "Rue du Rhône 10\n1204 Genève\nSuisse",
   "modelId": "anthropic.claude-3-5-sonnet-20240620-v1:0",
@@ -177,7 +174,6 @@ Response 200:
   "created_at": "2026-02-03T08:57:00Z",
   "user_sub": "cognito-sub",
   "input": {
-    "recipient_name": "Jane Doe",
     "country_code": "CH",
     "raw_address": "Rue du Rhône 10\n1204 Genève\nSuisse",
     "modelId": "anthropic..."
@@ -224,7 +220,7 @@ Response 200:
 ```
 Validation:
 - Must include `{address}`.
-- May include `{country}` and `{name}`.
+- May include `{country}`.
 
 ### 4.5 `GET /recent?limit=10`
 Returns the most recent **submissions** for the signed-in user.
@@ -237,7 +233,6 @@ Response 200:
       "submission_id": "01JH2...",
       "created_at": "2026-02-03T08:57:00Z",
       "country_code": "CH",
-      "recipient_name": "Jane Doe",
       "raw_address_preview": "Rue du Rhône 10, 1204 Genève",
       "preferred_method": "bedrock_geonames"
     }
@@ -269,7 +264,7 @@ Attributes (stored):
 - `created_at` (ISO8601)
 - `user_sub`
 - `ttl` (number, epoch seconds)
-- `input`: `{recipient_name,country_code,raw_address,modelId}`
+- `input`: `{country_code,raw_address,modelId}`
 - `results`: map keyed by pipeline id (each result includes `source` and `method`):
   - `bedrock_geonames` (`source`: `bedrock`, `geocode`: `geonames_offline`)
   - `libpostal_geonames` (`source`: `libpostal`, `geocode`: `geonames_offline`)
@@ -306,14 +301,13 @@ Behavior:
 ## 6) Address parsing contract
 ### 5.1 Output JSON schema (informal)
 - Always return a JSON object.
-- Required: `recipient_name`, `country_code`, `raw_address`, `confidence`, `warnings`.
+- Required: `country_code`, `raw_address`, `confidence`, `warnings`.
 - Others may be empty strings if not present.
 
 ### 6.2 Prompting approach
 Use a **prompt template** stored per user (editable in UI).
 
 Template variables:
-- `{name}` → recipient name field
 - `{country}` → country selection (use ISO-2 code or label; pick one and be consistent)
 - `{address}` → free-text address
 

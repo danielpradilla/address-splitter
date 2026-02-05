@@ -7,13 +7,12 @@ Task:
 
 Context:
 - Country: {country}
-- Recipient name: {name}
 
 Address to split (free text):
 {address}
 
 Return JSON with keys:
-recipient_name, country_code, address_line1, address_line2, postcode, city, state_region, neighborhood, po_box, company, attention, raw_address, confidence, warnings
+country_code, address_line1, address_line2, postcode, city, state_region, neighborhood, po_box, company, attention, raw_address, confidence, warnings
 
 Rules:
 - Use empty string for missing fields.

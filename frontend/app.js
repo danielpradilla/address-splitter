@@ -284,10 +284,9 @@ async function savePrompt() {
 
 function renderPromptPreview() {
   const tpl = document.querySelector('#promptTemplate').value || '';
-  const name = document.querySelector('#name').value || '';
   const country = document.querySelector('#country').value || '';
   const address = document.querySelector('#address').value || '';
-  const out = tpl.replaceAll('{name}', name).replaceAll('{country}', country).replaceAll('{address}', address);
+  const out = tpl.replaceAll('{country}', country).replaceAll('{address}', address);
   document.querySelector('#renderedPrompt').textContent = out;
 }
 
@@ -296,7 +295,6 @@ async function doSplit() {
   setStatus('Splitting…');
 
   const payload = {
-    recipient_name: (document.querySelector('#name').value || '').trim(),
     country_code: (document.querySelector('#country').value || '').trim(),
     raw_address: (document.querySelector('#address').value || '').trim(),
     modelId: (document.querySelector('#modelId').value || '').trim(),
@@ -307,8 +305,8 @@ async function doSplit() {
     ].filter(Boolean),
   };
 
-  if (!payload.recipient_name || !payload.raw_address) {
-    throw new Error('Please fill in Name and Address.');
+  if (!payload.raw_address) {
+    throw new Error('Please fill in Address.');
   }
   if (payload.pipelines.includes('bedrock_geonames') && !payload.modelId) {
     throw new Error('Select a Bedrock model or inference profile for pipeline #1.');
@@ -443,7 +441,7 @@ async function init() {
     document.querySelector('#btnSavePrompt').addEventListener('click', () => savePrompt().catch(e => setError(e.message)));
     document.querySelector('#btnSplit').addEventListener('click', () => doSplit().catch(e => setError(e.message)));
 
-    ['#promptTemplate','#name','#country','#address'].forEach(sel => {
+    ['#promptTemplate','#country','#address'].forEach(sel => {
       document.querySelector(sel).addEventListener('input', renderPromptPreview);
     });
     renderPromptPreview();

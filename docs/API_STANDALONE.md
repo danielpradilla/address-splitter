@@ -54,7 +54,6 @@ curl -s -X POST "$API_BASE_URL/split" \
   -H "Authorization: Bearer $ID_TOKEN" \
   -H "Content-Type: application/json" \
   -d '{
-    "recipient_name":"Jane Doe",
     "country_code":"DE",
     "raw_address":"Unter den Linden 77\n10117 Berlin\nGermany",
     "modelId":"<pick-from-/models>"

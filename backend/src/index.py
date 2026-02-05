@@ -90,7 +90,6 @@ Goal:
 - If {country} is empty, infer the most likely country from the address text.
 
 Input:
-- Recipient name: {name}
 - Country context (ISO-2, may be empty): {country}
 - Address (free text):
 {address}
@@ -102,7 +101,7 @@ Output rules (VERY IMPORTANT):
 - warnings must be an array of strings.
 
 Return JSON with exactly these keys:
-recipient_name, country_code, address_line1, address_line2, postcode, city, state_region, neighborhood, po_box, company, attention, raw_address, confidence, warnings
+country_code, address_line1, address_line2, postcode, city, state_region, neighborhood, po_box, company, attention, raw_address, confidence, warnings
 """
         # Default pricing estimates (USD)
         pricing = {
@@ -122,8 +121,10 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
         except Exception:
             return _resp(400, {"error": "invalid_json"})
         prompt = (data.get("prompt_template") or "").strip()
-        if "{address}" not in prompt:
-            return _resp(400, {"error": "invalid_prompt", "message": "prompt_template must include {address}"})
+        try:
+            validate_template(prompt)
+        except Exception as e:
+            return _resp(400, {"error": "invalid_prompt", "message": str(e)})
 
         table = ddb.Table(table_name)
         pricing = data.get("pricing")
@@ -197,7 +198,6 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         "submission_id": it.get("submission_id"),
                         "created_at": it.get("created_at"),
                         "country_code": inp.get("country_code"),
-                        "recipient_name": inp.get("recipient_name"),
                         "raw_address_preview": (inp.get("raw_address") or "").replace("\n", ", ")[:120],
                         "preferred_method": it.get("preferred_method"),
                         "pipelines": {
@@ -260,14 +260,13 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
         except Exception:
             return _resp(400, {"error": "invalid_json"})
 
-        recipient_name = (data.get("recipient_name") or "").strip()
         country_code = (data.get("country_code") or "").strip().upper()
         raw_address = (data.get("raw_address") or "").strip()
         model_id = (data.get("modelId") or "").strip()
         pipelines = data.get("pipelines") or ["bedrock_geonames", "libpostal_geonames", "aws_services"]
 
-        if not recipient_name or not raw_address:
-            return _resp(400, {"error": "missing_fields", "required": ["recipient_name","raw_address"], "optional": ["country_code"]})
+        if not raw_address:
+            return _resp(400, {"error": "missing_fields", "required": ["raw_address"], "optional": ["country_code"]})
 
         if not country_code:
             # v1 behavior: allow empty country (auto-detect to be implemented in pipeline #1 later).
@@ -281,7 +280,7 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
             validate_template(prompt_t)
         except Exception as e:
             return _resp(400, {"error": "invalid_prompt", "message": str(e)})
-        rendered_prompt = render_prompt(prompt_t, name=recipient_name, country=country_code, address=raw_address)
+        rendered_prompt = render_prompt(prompt_t, country=country_code, address=raw_address)
 
         # Pricing settings (optional)
         pricing = user_settings_table(settings_table_name).get_item(Key={"user_sub": user_sub}).get("Item", {}).get("pricing") or {}
@@ -310,7 +309,6 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                         norm = normalize_result(
                             parsed,
                             fallback={
-                                "recipient_name": recipient_name,
                                 "country_code": country_code,
                                 "raw_address": raw_address,
                             },
@@ -404,14 +402,12 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
                     from libpostal_real import parse_with_libpostal
 
                     parsed = parse_with_libpostal(
-                        recipient_name=recipient_name,
                         country_code=country_code,
                         raw_address=raw_address,
                     )
                     norm = normalize_result(
                         parsed,
                         fallback={
-                            "recipient_name": recipient_name,
                             "country_code": country_code,
                             "raw_address": raw_address,
                         },
@@ -525,7 +521,6 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
             created_at=created_at,
             ttl=ttl,
             input_obj={
-                "recipient_name": recipient_name,
                 "country_code": country_code,
                 "raw_address": raw_address,
                 "modelId": model_id,
@@ -539,7 +534,7 @@ recipient_name, country_code, address_line1, address_line2, postcode, city, stat
             "submission_id": submission_id,
             "created_at": created_at,
             "user_sub": user_sub,
-            "input": {"recipient_name": recipient_name, "country_code": country_code, "raw_address": raw_address, "modelId": model_id},
+            "input": {"country_code": country_code, "raw_address": raw_address, "modelId": model_id},
             "results": results,
             "preferred_method": None,
         })

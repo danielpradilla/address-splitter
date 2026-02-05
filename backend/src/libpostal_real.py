@@ -9,7 +9,7 @@ def _pick(parts: list[tuple[str, str]], label: str) -> list[str]:
     return [v for (v, l) in parts if l == label and v]
 
 
-def parse_with_libpostal(*, recipient_name: str, country_code: str, raw_address: str) -> dict[str, Any]:
+def parse_with_libpostal(*, country_code: str, raw_address: str) -> dict[str, Any]:
     """Parse address using libpostal (Senzing data model baked into image).
 
     Returns a dict compatible with normalize_result().
@@ -52,7 +52,6 @@ def parse_with_libpostal(*, recipient_name: str, country_code: str, raw_address:
         conf = 0.95
 
     return {
-        "recipient_name": recipient_name or "",
         "country_code": (country_code or "").strip().upper(),
         "address_line1": address_line1,
         "address_line2": address_line2,

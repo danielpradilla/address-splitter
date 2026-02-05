@@ -2,7 +2,6 @@ from typing import Any
 
 
 REQUIRED_KEYS = [
-    "recipient_name",
     "country_code",
     "raw_address",
     "confidence",
@@ -10,7 +9,6 @@ REQUIRED_KEYS = [
 ]
 
 ALL_KEYS = [
-    "recipient_name",
     "country_code",
     "address_line1",
     "address_line2",
@@ -41,7 +39,6 @@ def normalize_result(obj: dict[str, Any], *, fallback: dict[str, str]) -> dict[s
         out[k] = v.strip()
 
     # Ensure required fallbacks
-    out["recipient_name"] = out.get("recipient_name") or fallback.get("recipient_name", "")
     out["raw_address"] = out.get("raw_address") or fallback.get("raw_address", "")
 
     # Country
