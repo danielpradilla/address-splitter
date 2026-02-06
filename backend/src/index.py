@@ -14,6 +14,7 @@ from geonames_lookup import lookup_city_best, lookup_city_to_postcode_best, look
 from schema import normalize_result
 from storage import epoch_plus_days, get_submission, list_recent, put_submission, set_preferred, user_settings_table
 from ulid_util import new_ulid
+from loqate import resolve_address as loqate_resolve_address
 
 
 ddb = boto3.resource("dynamodb")
@@ -228,6 +229,7 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                             "bedrock_geonames": _summ(res.get("bedrock_geonames")),
                             "libpostal_geonames": _summ(res.get("libpostal_geonames")),
                             "aws_services": _summ(res.get("aws_services")),
+                            "loqate": _summ(res.get("loqate")),
                         },
                     }
                 )
@@ -263,7 +265,7 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
             return _resp(400, {"error": "invalid_json"})
 
         preferred = (data.get("preferred_method") or "").strip()
-        allowed = {"bedrock_geonames", "libpostal_geonames", "aws_services"}
+        allowed = {"bedrock_geonames", "libpostal_geonames", "aws_services", "loqate"}
         if preferred not in allowed:
             return _resp(400, {"error": "invalid_preferred_method", "allowed": sorted(list(allowed))})
 
@@ -287,7 +289,7 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
         country_code = (data.get("country_code") or "").strip().upper()
         raw_address = (data.get("raw_address") or "").strip()
         model_id = (data.get("modelId") or "").strip()
-        pipelines = data.get("pipelines") or ["bedrock_geonames", "libpostal_geonames", "aws_services"]
+        pipelines = data.get("pipelines") or ["bedrock_geonames", "libpostal_geonames", "aws_services", "loqate"]
 
         if not raw_address:
             return _resp(400, {"error": "missing_fields", "required": ["raw_address"], "optional": ["country_code"]})
@@ -536,6 +538,34 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         "country_code": comp.get("country_code", country_code),
                         "raw": geo.get("raw"),
                         "cost": cost,
+                    }
+            elif p == "loqate":
+                try:
+                    out = loqate_resolve_address(
+                        raw_address=raw_address,
+                        country_code=country_code,
+                        language=os.getenv("LOQATE_LANGUAGE", ""),
+                    )
+                    norm = normalize_result(
+                        out,
+                        fallback={
+                            "country_code": country_code,
+                            "raw_address": raw_address,
+                        },
+                    )
+                    # Keep raw provider payload for debugging.
+                    norm.update({
+                        "source": "loqate",
+                        "geocode": "none",
+                        "raw": out.get("raw"),
+                    })
+                    results[p] = norm
+                except Exception as e:
+                    results[p] = {
+                        "source": "loqate",
+                        "geocode": "none",
+                        "warnings": ["loqate_failed", str(e)],
+                        "confidence": 0.0,
                     }
 
         put_submission(

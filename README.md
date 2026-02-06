@@ -20,6 +20,9 @@ Experiment playground for **parsing / splitting / geocoding postal addresses** a
    - Implemented using **real libpostal** inside the API Lambda **container image**.
    - libpostal model is the **Senzing** data model (baked into the image).
 3. **AWS services** (Amazon Location Service for geocoding + structured components)
+4. **Loqate** (Capture Interactive Find → Retrieve for address parsing/normalization)
+   - Uses Loqate to resolve a free-text address into structured components.
+   - Configure with `LOQATE_API_KEY` (kept in `.env.local`, never committed).
 
 Each stored submission includes provenance so you always know which output came from which pipeline.
 

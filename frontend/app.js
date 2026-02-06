@@ -317,6 +317,7 @@ async function doSplit() {
       document.querySelector('#p1').checked ? 'bedrock_geonames' : null,
       document.querySelector('#p2').checked ? 'libpostal_geonames' : null,
       document.querySelector('#p3').checked ? 'aws_services' : null,
+      document.querySelector('#p4').checked ? 'loqate' : null,
     ].filter(Boolean),
   };
 
@@ -378,10 +379,12 @@ async function loadRecent() {
     const p1 = it.pipelines?.bedrock_geonames;
     const p2 = it.pipelines?.libpostal_geonames;
     const p3 = it.pipelines?.aws_services;
+    const p4 = it.pipelines?.loqate;
 
     const cls1 = pipelineComplete(p1) ? 'cellComplete' : 'cellIncomplete';
     const cls2 = pipelineComplete(p2) ? 'cellComplete' : 'cellIncomplete';
     const cls3 = pipelineComplete(p3) ? 'cellComplete' : 'cellIncomplete';
+    const cls4 = pipelineComplete(p4) ? 'cellComplete' : 'cellIncomplete';
 
     tr.appendChild(tdWhen);
     tr.appendChild(tdInp);
@@ -415,6 +418,16 @@ async function loadRecent() {
     const a3 = tdAlerts(p3?.warnings);
     a3.classList.add(cls3);
     tr.appendChild(a3);
+
+    // Pipeline 4 fields
+    tr.appendChild(tdText(p4?.address_line1, cls4));
+    tr.appendChild(tdText(p4?.city, cls4));
+    tr.appendChild(tdText(p4?.postcode, cls4));
+    tr.appendChild(tdText(p4?.state_region, cls4));
+    tr.appendChild(tdText(p4?.country_code, cls4));
+    const a4 = tdAlerts(p4?.warnings);
+    a4.classList.add(cls4);
+    tr.appendChild(a4);
 
     tbody.appendChild(tr);
   }
