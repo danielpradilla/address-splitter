@@ -101,7 +101,7 @@ def resolve_address(*,
             "raw_address": raw_address,
             "confidence": 0.0,
             "warnings": ["loqate_no_candidates"],
-            "raw": {"find": find},
+            "raw": {"best": None},
         }
 
     best = items[0] or {}
@@ -112,7 +112,7 @@ def resolve_address(*,
             "raw_address": raw_address,
             "confidence": 0.0,
             "warnings": ["loqate_missing_id"],
-            "raw": {"find": find, "best": best},
+            "raw": {"best": {"Text": best.get("Text"), "Type": best.get("Type")}},
         }
 
     retrieve = loqate_retrieve(item_id=best_id, timeout_s=timeout_s)
@@ -123,7 +123,7 @@ def resolve_address(*,
             "raw_address": raw_address,
             "confidence": 0.0,
             "warnings": ["loqate_retrieve_empty"],
-            "raw": {"find": find, "retrieve": retrieve},
+            "raw": {"best": {"Id": best_id, "Text": best.get("Text"), "Type": best.get("Type")}},
         }
 
     r0 = r_items[0] or {}
@@ -154,6 +154,7 @@ def resolve_address(*,
     # Confidence: Loqate doesn't expose a standard [0..1] here; we treat success as high-ish.
     conf = 0.9 if line1 or city or postcode else 0.6
 
+    # NOTE: Do not return full raw provider payloads by default (can be very large).
     return {
         "country_code": cc,
         "address_line1": line1,
@@ -168,5 +169,11 @@ def resolve_address(*,
         "raw_address": raw_address,
         "confidence": conf,
         "warnings": [],
-        "raw": {"find": find, "retrieve": retrieve, "best": best},
+        "raw": {
+            "best": {
+                "Id": best_id,
+                "Text": best.get("Text"),
+                "Type": best.get("Type"),
+            }
+        },
     }
