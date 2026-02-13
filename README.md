@@ -22,7 +22,8 @@ Experiment playground for **parsing / splitting / geocoding postal addresses** a
 3. **AWS services** (Amazon Location Service for geocoding + structured components)
 4. **Loqate** (Capture Interactive Find → Retrieve for address parsing/normalization)
    - Uses Loqate to resolve a free-text address into structured components.
-   - Configure with `LOQATE_API_KEY` (kept in `.env.local`, never committed).
+   - Cloud runtime: configure via AWS Secrets Manager (secret JSON key: `LOQATE_API_KEY`).
+   - Local runtime: can use `LOQATE_API_KEY` in local env.
 
 Each stored submission includes provenance so you always know which output came from which pipeline.
 
@@ -48,6 +49,8 @@ cp .env.example .env.local
 ```
 
 2. Edit `.env.local` if needed.
+   - For cloud deploys, set `LOQATE_SECRET_ID` to your Secrets Manager secret id/name/ARN.
+   - Secret JSON must contain `{"LOQATE_API_KEY":"..."}`.
 
 3. Load env vars and deploy:
 
@@ -60,6 +63,46 @@ chmod +x scripts/deploy-pipeline.sh
 Notes:
 - `.env.local` is ignored by git.
 - `.env.example` is safe to commit.
+
+### Configure Loqate API key
+Use AWS Secrets Manager for cloud runtime.
+
+1. Create (or update) a secret in `eu-central-1`:
+
+```bash
+aws secretsmanager create-secret \
+  --region eu-central-1 \
+  --name address-splitter/dev/loqate \
+  --secret-string '{"LOQATE_API_KEY":"YOUR_LOQATE_KEY"}'
+```
+
+If it already exists, update the value:
+
+```bash
+aws secretsmanager put-secret-value \
+  --region eu-central-1 \
+  --secret-id address-splitter/dev/loqate \
+  --secret-string '{"LOQATE_API_KEY":"YOUR_LOQATE_KEY"}'
+```
+
+2. Set the secret id in `.env.local`:
+
+```bash
+export LOQATE_SECRET_ID=address-splitter/dev/loqate
+```
+
+3. Deploy:
+
+```bash
+source .env.local
+./scripts/deploy-pipeline.sh
+```
+
+Notes:
+- Secret JSON key must be exactly `LOQATE_API_KEY`.
+- Runtime Lambda env var `LOQATE_API_KEY` is injected from this secret by CloudFormation.
+- If you rotate/update the secret value, redeploy the main app stack (or run the pipeline again) so Lambda picks up the new value.
+- For local-only testing (outside AWS), you can export `LOQATE_API_KEY` directly in your shell.
 
 ## Quick auth + API test (Cognito user required)
 After you create a Cognito user (admin-created), you can verify auth + API reachability.

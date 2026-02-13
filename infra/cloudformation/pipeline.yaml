@@ -20,6 +20,10 @@ Parameters:
   CodeStarConnectionArn:
     Type: String
     Description: "ARN of an existing AWS CodeStar Connection to GitHub (must be in AVAILABLE state)"
+  LoqateSecretId:
+    Type: String
+    Default: ''
+    Description: Optional Secrets Manager secret id/name/ARN containing JSON key LOQATE_API_KEY
 
 Resources:
   ArtifactBucket:
@@ -148,6 +152,8 @@ Resources:
             Value: !Ref AppName
           - Name: STAGE
             Value: !Ref Stage
+          - Name: LOQATE_SECRET_ID
+            Value: !Ref LoqateSecretId
       Source:
         Type: CODEPIPELINE
       TimeoutInMinutes: 30

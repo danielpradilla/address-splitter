@@ -425,12 +425,20 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         }
             elif p == "libpostal_geonames":
                 try:
+                    p_t0 = time.perf_counter()
                     from libpostal_real import parse_with_libpostal
 
+                    t0 = time.perf_counter()
                     parsed = parse_with_libpostal(
                         country_code=country_code,
                         raw_address=raw_address,
                     )
+                    print(
+                        "[timing] pipeline=libpostal_geonames step=parse_with_libpostal "
+                        f"ms={(time.perf_counter() - t0) * 1000:.1f} "
+                        f"parts={len(parsed.get('libpostal_parts', []))}"
+                    )
+                    t0 = time.perf_counter()
                     norm = normalize_result(
                         parsed,
                         fallback={
@@ -438,16 +446,25 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                             "raw_address": raw_address,
                         },
                     )
+                    print(
+                        "[timing] pipeline=libpostal_geonames step=normalize_result "
+                        f"ms={(time.perf_counter() - t0) * 1000:.1f}"
+                    )
 
                     # GeoNames enrichment (same strategy as pipeline #1)
                     geonames_table = os.getenv("GEONAMES_TABLE", "")
                     geonames_cities = os.getenv("GEONAMES_CITIES_TABLE", "")
 
                     if geonames_table and norm.get("country_code") and norm.get("postcode"):
+                        t0 = time.perf_counter()
                         hit = lookup_postcode(
                             table_name=geonames_table,
                             country_code=norm.get("country_code", ""),
                             postcode=norm.get("postcode", ""),
+                        )
+                        print(
+                            "[timing] pipeline=libpostal_geonames step=lookup_postcode "
+                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(hit)}"
                         )
                         if hit and hit.get("latitude") and hit.get("longitude"):
                             norm["latitude"] = hit.get("latitude")
@@ -461,11 +478,16 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         and norm.get("country_code")
                         and norm.get("city")
                     ):
+                        t0 = time.perf_counter()
                         city_best = lookup_city_best(
                             cities_table=geonames_cities,
                             country_code=norm.get("country_code", ""),
                             city=norm.get("city", ""),
                         ) if geonames_cities else None
+                        print(
+                            "[timing] pipeline=libpostal_geonames step=lookup_city_best "
+                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(city_best)}"
+                        )
 
                         if city_best and city_best.get("latitude") and city_best.get("longitude"):
                             norm["latitude"] = city_best.get("latitude")
@@ -473,6 +495,7 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                             norm["geo_accuracy"] = "city"
                             norm["geonames_match"] = f"{city_best.get('name','')}".strip()
 
+                        t0 = time.perf_counter()
                         pc_hit = lookup_city_to_postcode_best(
                             postcodes_table=geonames_table,
                             country_code=norm.get("country_code", ""),
@@ -480,6 +503,10 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                             city_lat=city_best.get("latitude") if city_best else None,
                             city_lon=city_best.get("longitude") if city_best else None,
                             limit=50,
+                        )
+                        print(
+                            "[timing] pipeline=libpostal_geonames step=lookup_city_to_postcode_best "
+                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(pc_hit)}"
                         )
                         if pc_hit and pc_hit.get("postcode"):
                             norm["postcode"] = pc_hit.get("postcode")
@@ -494,6 +521,10 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         "geocode": "geonames_offline",
                         "libpostal_parts": parsed.get("libpostal_parts", []),
                     })
+                    print(
+                        "[timing] pipeline=libpostal_geonames step=total "
+                        f"ms={(time.perf_counter() - p_t0) * 1000:.1f}"
+                    )
                     results[p] = norm
                 except Exception as e:
                     results[p] = {
@@ -568,6 +599,7 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         "confidence": 0.0,
                     }
 
+        t_put = time.perf_counter()
         put_submission(
             table_name=table_name,
             user_sub=user_sub,
@@ -583,6 +615,7 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
             results=results,
             preferred_method=None,
         )
+        print(f"[timing] route=POST /split step=put_submission ms={(time.perf_counter() - t_put) * 1000:.1f}")
 
         return _resp(200, {
             "submission_id": submission_id,

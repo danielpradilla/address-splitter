@@ -7,6 +7,7 @@ set -euo pipefail
 : "${GITHUB_REPO:?Missing GITHUB_REPO}"
 : "${GITHUB_BRANCH:?Missing GITHUB_BRANCH}"
 : "${CODESTAR_ARN:?Missing CODESTAR_ARN}"
+: "${LOQATE_SECRET_ID:=}"
 
 aws cloudformation deploy \
   --region "$AWS_REGION" \
@@ -19,4 +20,5 @@ aws cloudformation deploy \
       AwsRegion="$AWS_REGION" \
       GitHubRepo="$GITHUB_REPO" \
       GitHubBranch="$GITHUB_BRANCH" \
-      CodeStarConnectionArn="$CODESTAR_ARN"
+      CodeStarConnectionArn="$CODESTAR_ARN" \
+      LoqateSecretId="$LOQATE_SECRET_ID"

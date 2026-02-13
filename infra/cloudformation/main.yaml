@@ -46,10 +46,15 @@ Parameters:
     Type: String
     Default: Here
     AllowedValues: [Here, Esri]
+  LoqateSecretId:
+    Type: String
+    Default: ''
+    Description: Optional Secrets Manager secret id/name/ARN containing JSON key LOQATE_API_KEY
 
 Conditions:
   UseGeonamesOffline: !Equals [!Ref EnableGeonamesOffline, 'true']
   UseAwsServices: !Equals [!Ref EnableAwsServices, 'true']
+  HasLoqateSecret: !Not [!Equals [!Ref LoqateSecretId, '']]
 
 Resources:
   # -----------------
@@ -350,8 +355,8 @@ Resources:
       Code:
         ImageUri: !Ref LambdaImageUri
       Role: !GetAtt ApiFunctionRole.Arn
-      Timeout: 30
-      MemorySize: 2048
+      Timeout: 60
+      MemorySize: 8192
       Environment:
         Variables:
           APP_NAME: !Ref AppName
@@ -364,6 +369,10 @@ Resources:
           GEONAMES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesLookupTable, '']
           GEONAMES_CITIES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesCitiesTable, '']
           PLACE_INDEX_NAME: !If [UseAwsServices, !Ref PlaceIndex, '']
+          LOQATE_API_KEY: !If
+            - HasLoqateSecret
+            - !Sub '{{resolve:secretsmanager:${LoqateSecretId}:SecretString:LOQATE_API_KEY}}'
+            - ''
       # Code defined above via container image (ImageUri)
 
   HttpApi:

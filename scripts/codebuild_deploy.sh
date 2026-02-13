@@ -5,6 +5,7 @@ set -euo pipefail
 : "${STACK_NAME:?Missing STACK_NAME}"
 : "${STAGE:?Missing STAGE}"
 : "${ALLOWED_ORIGINS:=*}"
+: "${LOQATE_SECRET_ID:=}"
 
 echo "Building + pushing Lambda container image (libpostal + Senzing model)"
 SRC_VER=${CODEBUILD_RESOLVED_SOURCE_VERSION:-$(date +%s)}
@@ -33,7 +34,8 @@ aws cloudformation deploy \
   --no-fail-on-empty-changeset \
   --parameter-overrides \
       AllowedOrigins="$ALLOWED_ORIGINS" \
-      LambdaImageUri="$IMAGE_URI"
+      LambdaImageUri="$IMAGE_URI" \
+      LoqateSecretId="$LOQATE_SECRET_ID"
 
 echo "Fetching outputs"
 FRONTEND_BUCKET=$(aws cloudformation describe-stacks \
