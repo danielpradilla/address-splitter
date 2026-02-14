@@ -22,18 +22,8 @@ RUN git clone https://github.com/openvenues/libpostal.git /tmp/libpostal && \
     (ln -sf /usr/local/lib/libpostal.so.1 /usr/lib64/libpostal.so.1 || true) && \
     (ln -sf /usr/local/lib/libpostal.so.1 /usr/lib/libpostal.so.1 || true)
 
-# Install Senzing-trained libpostal data model (overlays default model)
-# Docs: https://github.com/Senzing/libpostal-data
-RUN mkdir -p /opt/libpostal_data && \
-    mkdir -p /opt/libpostal_data/libpostal && \
-    cd /opt/libpostal_data/libpostal && \
-    curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.1.0/language_classifier.tar.gz -o language_classifier.tar.gz && \
-    curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.1.0/libpostal_data.tar.gz -o libpostal_data.tar.gz && \
-    curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.2.0/parser.tar.gz -o parser.tar.gz && \
-    tar -zxvf language_classifier.tar.gz && \
-    tar -zxvf libpostal_data.tar.gz && \
-    tar -zxvf parser.tar.gz && \
-    rm -f language_classifier.tar.gz libpostal_data.tar.gz parser.tar.gz
+# Use the default libpostal model installed during `make install`.
+# (Senzing overlay disabled while investigating Lambda init/import latency.)
 
 ENV LIBPOSTAL_DATA_DIR=/opt/libpostal_data/libpostal
 # Ensure shared libs (libpostal.so.1) are discoverable
