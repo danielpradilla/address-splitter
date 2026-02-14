@@ -416,7 +416,7 @@ Resources:
     Properties:
       ApiId: !Ref HttpApi
       IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ApiFunctionAlias.Arn
+      IntegrationUri: !Ref ApiFunctionAlias
       PayloadFormatVersion: '2.0'
 
   RouteHealth:
