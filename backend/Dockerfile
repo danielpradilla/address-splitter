@@ -13,7 +13,8 @@ RUN dnf -y update && \
 RUN git clone https://github.com/openvenues/libpostal.git /tmp/libpostal && \
     cd /tmp/libpostal && \
     ./bootstrap.sh && \
-    ./configure --datadir=/opt/libpostal_data && \
+    # Keep a single canonical data directory for all model files.
+    ./configure --datadir=/opt/libpostal_data/libpostal && \
     make -j2 && \
     make install && \
     rm -rf /tmp/libpostal && \
@@ -24,7 +25,8 @@ RUN git clone https://github.com/openvenues/libpostal.git /tmp/libpostal && \
 # Install Senzing-trained libpostal data model (overlays default model)
 # Docs: https://github.com/Senzing/libpostal-data
 RUN mkdir -p /opt/libpostal_data && \
-    cd /opt/libpostal_data && \
+    mkdir -p /opt/libpostal_data/libpostal && \
+    cd /opt/libpostal_data/libpostal && \
     curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.1.0/language_classifier.tar.gz -o language_classifier.tar.gz && \
     curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.1.0/libpostal_data.tar.gz -o libpostal_data.tar.gz && \
     curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.2.0/parser.tar.gz -o parser.tar.gz && \
@@ -33,7 +35,7 @@ RUN mkdir -p /opt/libpostal_data && \
     tar -zxvf parser.tar.gz && \
     rm -f language_classifier.tar.gz libpostal_data.tar.gz parser.tar.gz
 
-ENV LIBPOSTAL_DATA_DIR=/opt/libpostal_data
+ENV LIBPOSTAL_DATA_DIR=/opt/libpostal_data/libpostal
 # Ensure shared libs (libpostal.so.1) are discoverable
 ENV LD_LIBRARY_PATH=/usr/local/lib:/usr/local/lib64:/usr/lib64:/usr/lib
 
