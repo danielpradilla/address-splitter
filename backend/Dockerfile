@@ -13,17 +13,31 @@ RUN dnf -y update && \
 RUN git clone https://github.com/openvenues/libpostal.git /tmp/libpostal && \
     cd /tmp/libpostal && \
     ./bootstrap.sh && \
-    # Keep a single canonical data directory for all model files.
-    ./configure --datadir=/opt/libpostal_data/libpostal && \
+    ./configure --datadir=/opt/libpostal_data && \
     make -j2 && \
     make install && \
+    # Canonicalize data path to /opt/libpostal_data/libpostal
+    mkdir -p /opt/libpostal_data/libpostal && \
+    if [ -d /opt/libpostal_data/libpostal/libpostal ]; then \
+      cp -a /opt/libpostal_data/libpostal/libpostal/. /opt/libpostal_data/libpostal/; \
+      rm -rf /opt/libpostal_data/libpostal/libpostal; \
+    fi && \
     rm -rf /tmp/libpostal && \
     # Ensure dynamic loader can find libpostal at runtime (Lambda base image lacks ldconfig)
     (ln -sf /usr/local/lib/libpostal.so.1 /usr/lib64/libpostal.so.1 || true) && \
     (ln -sf /usr/local/lib/libpostal.so.1 /usr/lib/libpostal.so.1 || true)
 
-# Use the default libpostal model installed during `make install`.
-# (Senzing overlay disabled while investigating Lambda init/import latency.)
+# Install Senzing-trained libpostal data model (overlays default model)
+# Docs: https://github.com/Senzing/libpostal-data
+RUN mkdir -p /opt/libpostal_data/libpostal && \
+    cd /opt/libpostal_data/libpostal && \
+    curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.1.0/language_classifier.tar.gz -o language_classifier.tar.gz && \
+    curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.1.0/libpostal_data.tar.gz -o libpostal_data.tar.gz && \
+    curl -L https://public-read-libpostal-data.s3.amazonaws.com/v1.2.0/parser.tar.gz -o parser.tar.gz && \
+    tar -zxvf language_classifier.tar.gz && \
+    tar -zxvf libpostal_data.tar.gz && \
+    tar -zxvf parser.tar.gz && \
+    rm -f language_classifier.tar.gz libpostal_data.tar.gz parser.tar.gz
 
 ENV LIBPOSTAL_DATA_DIR=/opt/libpostal_data/libpostal
 # Ensure shared libs (libpostal.so.1) are discoverable
