@@ -127,6 +127,7 @@ source .env.local
 
 Notes:
 - Wake configures provisioned concurrency on Lambda alias `live`.
+- Wake also runs a one-time libpostal prewarm call (can take ~2-4 minutes).
 - Sleep removes provisioned concurrency (no always-on warm capacity).
 - If libpostal is asleep, requests may fail or time out due to long cold init.
 

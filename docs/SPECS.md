@@ -10,6 +10,7 @@
 - API uses Lambda alias `live` as invocation target.
 - libpostal usage requires provisioned concurrency to be enabled first.
 - `wake`: set provisioned concurrency on alias `live` to `1`.
+- `wake`: execute one explicit prewarm invoke for `libpostal_geonames`.
 - `sleep`: remove provisioned concurrency on alias `live`.
 
 ### Operational commands

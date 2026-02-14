@@ -355,7 +355,7 @@ Resources:
       Code:
         ImageUri: !Ref LambdaImageUri
       Role: !GetAtt ApiFunctionRole.Arn
-      Timeout: 30
+      Timeout: 180
       MemorySize: 7168
       Environment:
         Variables:
