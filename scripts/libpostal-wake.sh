@@ -34,7 +34,7 @@ for i in {1..60}; do
 
   if [[ "$STATUS" == "READY" ]]; then
     echo "READY"
-    exit 0
+    break
   fi
   if [[ "$STATUS" == "FAILED" ]]; then
     echo "FAILED"
