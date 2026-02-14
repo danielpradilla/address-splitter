@@ -426,7 +426,14 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
             elif p == "libpostal_geonames":
                 try:
                     p_t0 = time.perf_counter()
+                    print("[timing] pipeline=libpostal_geonames step=before_import", flush=True)
+                    t0 = time.perf_counter()
                     from libpostal_real import parse_with_libpostal
+                    print(
+                        "[timing] pipeline=libpostal_geonames step=import_libpostal "
+                        f"ms={(time.perf_counter() - t0) * 1000:.1f}",
+                        flush=True,
+                    )
 
                     t0 = time.perf_counter()
                     parsed = parse_with_libpostal(
@@ -436,7 +443,8 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                     print(
                         "[timing] pipeline=libpostal_geonames step=parse_with_libpostal "
                         f"ms={(time.perf_counter() - t0) * 1000:.1f} "
-                        f"parts={len(parsed.get('libpostal_parts', []))}"
+                        f"parts={len(parsed.get('libpostal_parts', []))}",
+                        flush=True,
                     )
                     t0 = time.perf_counter()
                     norm = normalize_result(
@@ -448,7 +456,8 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                     )
                     print(
                         "[timing] pipeline=libpostal_geonames step=normalize_result "
-                        f"ms={(time.perf_counter() - t0) * 1000:.1f}"
+                        f"ms={(time.perf_counter() - t0) * 1000:.1f}",
+                        flush=True,
                     )
 
                     # GeoNames enrichment (same strategy as pipeline #1)
@@ -464,7 +473,8 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         )
                         print(
                             "[timing] pipeline=libpostal_geonames step=lookup_postcode "
-                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(hit)}"
+                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(hit)}",
+                            flush=True,
                         )
                         if hit and hit.get("latitude") and hit.get("longitude"):
                             norm["latitude"] = hit.get("latitude")
@@ -486,7 +496,8 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         ) if geonames_cities else None
                         print(
                             "[timing] pipeline=libpostal_geonames step=lookup_city_best "
-                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(city_best)}"
+                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(city_best)}",
+                            flush=True,
                         )
 
                         if city_best and city_best.get("latitude") and city_best.get("longitude"):
@@ -506,7 +517,8 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         )
                         print(
                             "[timing] pipeline=libpostal_geonames step=lookup_city_to_postcode_best "
-                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(pc_hit)}"
+                            f"ms={(time.perf_counter() - t0) * 1000:.1f} hit={bool(pc_hit)}",
+                            flush=True,
                         )
                         if pc_hit and pc_hit.get("postcode"):
                             norm["postcode"] = pc_hit.get("postcode")
@@ -523,7 +535,8 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                     })
                     print(
                         "[timing] pipeline=libpostal_geonames step=total "
-                        f"ms={(time.perf_counter() - p_t0) * 1000:.1f}"
+                        f"ms={(time.perf_counter() - p_t0) * 1000:.1f}",
+                        flush=True,
                     )
                     results[p] = norm
                 except Exception as e:
@@ -615,7 +628,10 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
             results=results,
             preferred_method=None,
         )
-        print(f"[timing] route=POST /split step=put_submission ms={(time.perf_counter() - t_put) * 1000:.1f}")
+        print(
+            f"[timing] route=POST /split step=put_submission ms={(time.perf_counter() - t_put) * 1000:.1f}",
+            flush=True,
+        )
 
         return _resp(200, {
             "submission_id": submission_id,
