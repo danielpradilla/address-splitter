@@ -355,8 +355,8 @@ Resources:
       Code:
         ImageUri: !Ref LambdaImageUri
       Role: !GetAtt ApiFunctionRole.Arn
-      Timeout: 60
-      MemorySize: 8192
+      Timeout: 30
+      MemorySize: 7168
       Environment:
         Variables:
           APP_NAME: !Ref AppName
@@ -374,6 +374,19 @@ Resources:
             - !Sub '{{resolve:secretsmanager:${LoqateSecretId}:SecretString:LOQATE_API_KEY}}'
             - ''
       # Code defined above via container image (ImageUri)
+
+  ApiFunctionVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref ApiFunction
+      Description: !Sub 'Image ${LambdaImageUri}'
+
+  ApiFunctionAlias:
+    Type: AWS::Lambda::Alias
+    Properties:
+      Name: live
+      FunctionName: !Ref ApiFunction
+      FunctionVersion: !GetAtt ApiFunctionVersion.Version
 
   HttpApi:
     Type: AWS::ApiGatewayV2::Api
@@ -403,7 +416,7 @@ Resources:
     Properties:
       ApiId: !Ref HttpApi
       IntegrationType: AWS_PROXY
-      IntegrationUri: !GetAtt ApiFunction.Arn
+      IntegrationUri: !GetAtt ApiFunctionAlias.Arn
       PayloadFormatVersion: '2.0'
 
   RouteHealth:
@@ -489,7 +502,7 @@ Resources:
     Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref ApiFunction
+      FunctionName: !Ref ApiFunctionAlias
       Principal: apigateway.amazonaws.com
       SourceArn: !Sub 'arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${HttpApi}/*/*/*'
 

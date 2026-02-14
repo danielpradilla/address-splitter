@@ -19,6 +19,7 @@ Experiment playground for **parsing / splitting / geocoding postal addresses** a
 2. **libpostal splitting + offline GeoNames geocoding**
    - Implemented using **real libpostal** inside the API Lambda **container image**.
    - libpostal model is the **Senzing** data model (baked into the image).
+   - Operational mode: **wake/sleep** (provisioned concurrency on demand) for sporadic usage.
 3. **AWS services** (Amazon Location Service for geocoding + structured components)
 4. **Loqate** (Capture Interactive Find → Retrieve for address parsing/normalization)
    - Uses Loqate to resolve a free-text address into structured components.
@@ -103,6 +104,31 @@ Notes:
 - Runtime Lambda env var `LOQATE_API_KEY` is injected from this secret by CloudFormation.
 - If you rotate/update the secret value, redeploy the main app stack (or run the pipeline again) so Lambda picks up the new value.
 - For local-only testing (outside AWS), you can export `LOQATE_API_KEY` directly in your shell.
+
+### Wake/Sleep libpostal (sporadic usage)
+`libpostal + Senzing` has heavy model-init cost. For low idle spend, use manual wake/sleep:
+
+1. Wake before using pipeline `2) libpostal + GeoNames`:
+
+```bash
+source .env.local
+chmod +x scripts/libpostal-wake.sh scripts/libpostal-sleep.sh
+./scripts/libpostal-wake.sh
+```
+
+2. Use the app normally.
+
+3. Sleep when done:
+
+```bash
+source .env.local
+./scripts/libpostal-sleep.sh
+```
+
+Notes:
+- Wake configures provisioned concurrency on Lambda alias `live`.
+- Sleep removes provisioned concurrency (no always-on warm capacity).
+- If libpostal is asleep, requests may fail or time out due to long cold init.
 
 ## Quick auth + API test (Cognito user required)
 After you create a Cognito user (admin-created), you can verify auth + API reachability.
