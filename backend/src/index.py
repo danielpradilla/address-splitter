@@ -212,6 +212,7 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         "city": r.get("city", ""),
                         "state_region": r.get("state_region", ""),
                         "country_code": r.get("country_code", ""),
+                        "geocode": r.get("geocode", ""),
                         "geo_accuracy": r.get("geo_accuracy", ""),
                         "latitude": r.get("latitude"),
                         "longitude": r.get("longitude"),
@@ -223,6 +224,7 @@ country_code, address_line1, address_line2, postcode, city, state_region, neighb
                         "submission_id": it.get("submission_id"),
                         "created_at": it.get("created_at"),
                         "country_code": inp.get("country_code"),
+                        "model_id": inp.get("modelId", ""),
                         "raw_address_preview": (inp.get("raw_address") or "").replace("\n", ", ")[:120],
                         "preferred_method": it.get("preferred_method"),
                         "pipelines": {

@@ -175,6 +175,10 @@ label.inline {
   border-top: 1px solid rgba(0,78,152,0.15);
 }
 
+.table .groupStart {
+  border-left: 1px solid rgba(0,78,152,0.28);
+}
+
 .table td {
   font-size: 11px;
 }

@@ -308,6 +308,8 @@ function renderPromptPreview() {
 async function doSplit() {
   setError('');
   setStatus('Splitting…');
+  document.querySelector('#results').textContent =
+    'Waiting for API response...\n\nYour request is being processed.';
 
   const payload = {
     country_code: (document.querySelector('#country').value || '').trim(),
@@ -356,10 +358,13 @@ function tdText(text, cls = '') {
   return td;
 }
 
-function tdAlerts(warnings) {
+function tdAlerts(warnings, geocode) {
   const td = document.createElement('td');
   td.className = 'cellAlerts';
-  td.textContent = (warnings && warnings.length) ? warnings.join('; ') : '';
+  const notes = [];
+  if (warnings && warnings.length) notes.push(...warnings);
+  if (geocode === 'geonames_offline') notes.push('geonames_offline');
+  td.textContent = notes.join('; ');
   return td;
 }
 
@@ -390,42 +395,51 @@ async function loadRecent() {
     tr.appendChild(tdInp);
 
     // Pipeline 1 fields
-    tr.appendChild(tdText(p1?.address_line1, cls1));
+    const p1a = tdText(p1?.address_line1, cls1);
+    p1a.classList.add('groupStart');
+    tr.appendChild(p1a);
     tr.appendChild(tdText(p1?.city, cls1));
     tr.appendChild(tdText(p1?.postcode, cls1));
     tr.appendChild(tdText(p1?.state_region, cls1));
     tr.appendChild(tdText(p1?.country_code, cls1));
-    const a1 = tdAlerts(p1?.warnings);
+    tr.appendChild(tdText(it.model_id || '', cls1));
+    const a1 = tdAlerts(p1?.warnings, p1?.geocode);
     a1.classList.add(cls1);
     tr.appendChild(a1);
 
     // Pipeline 2 fields
-    tr.appendChild(tdText(p2?.address_line1, cls2));
+    const p2a = tdText(p2?.address_line1, cls2);
+    p2a.classList.add('groupStart');
+    tr.appendChild(p2a);
     tr.appendChild(tdText(p2?.city, cls2));
     tr.appendChild(tdText(p2?.postcode, cls2));
     tr.appendChild(tdText(p2?.state_region, cls2));
     tr.appendChild(tdText(p2?.country_code, cls2));
-    const a2 = tdAlerts(p2?.warnings);
+    const a2 = tdAlerts(p2?.warnings, p2?.geocode);
     a2.classList.add(cls2);
     tr.appendChild(a2);
 
     // Pipeline 3 fields
-    tr.appendChild(tdText(p3?.address_line1, cls3));
+    const p3a = tdText(p3?.address_line1, cls3);
+    p3a.classList.add('groupStart');
+    tr.appendChild(p3a);
     tr.appendChild(tdText(p3?.city, cls3));
     tr.appendChild(tdText(p3?.postcode, cls3));
     tr.appendChild(tdText(p3?.state_region, cls3));
     tr.appendChild(tdText(p3?.country_code, cls3));
-    const a3 = tdAlerts(p3?.warnings);
+    const a3 = tdAlerts(p3?.warnings, p3?.geocode);
     a3.classList.add(cls3);
     tr.appendChild(a3);
 
     // Pipeline 4 fields
-    tr.appendChild(tdText(p4?.address_line1, cls4));
+    const p4a = tdText(p4?.address_line1, cls4);
+    p4a.classList.add('groupStart');
+    tr.appendChild(p4a);
     tr.appendChild(tdText(p4?.city, cls4));
     tr.appendChild(tdText(p4?.postcode, cls4));
     tr.appendChild(tdText(p4?.state_region, cls4));
     tr.appendChild(tdText(p4?.country_code, cls4));
-    const a4 = tdAlerts(p4?.warnings);
+    const a4 = tdAlerts(p4?.warnings, p4?.geocode);
     a4.classList.add(cls4);
     tr.appendChild(a4);
 
