@@ -133,6 +133,13 @@ Resources:
                   - ecr:TagResource
                 Resource: '*'
 
+              # Resolve dynamic references in CloudFormation parameters/env
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:DescribeSecret
+                Resource: '*'
+
   CodeBuildProject:
     Type: AWS::CodeBuild::Project
     Properties:
