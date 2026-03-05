@@ -12,6 +12,7 @@
 - `wake`: set provisioned concurrency on alias `live` to `1`.
 - `wake`: execute one explicit prewarm invoke for `libpostal_geonames`.
 - `sleep`: remove provisioned concurrency on alias `live`.
+- Offline geonames lookups rely on the `cities500` dump (Supplemented by `allCountries.txt` for postcodes) loaded into `address-splitter-dev-geonames-cities`/`-geonames`.
 
 ### Operational commands
 - `scripts/libpostal-wake.sh`

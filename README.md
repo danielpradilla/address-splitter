@@ -131,6 +131,36 @@ Notes:
 - Sleep removes provisioned concurrency (no always-on warm capacity).
 - If libpostal is asleep, requests may fail or time out due to long cold init.
 
+### Offline GeoNames data (cities500)
+The Bedrock/libpostal pipelines use the offline GeoNames tables populated from the `cities500` dump and the postal-code dump.
+
+1. Download and unzip the desired files:
+
+```bash
+curl -L https://download.geonames.org/export/dump/cities500.zip -o /tmp/cities500.zip
+unzip -o /tmp/cities500.zip -d data/geonames/
+```
+
+2. Re-import the tables (this overwrites the offline data with the higher-resolution file):
+
+```bash
+python scripts/geonames_import_cities.py \
+  --file data/geonames/cities500.txt \
+  --table address-splitter-dev-geonames-cities \
+  --region eu-central-1 \
+  --countries FR,CH,DE,US
+
+python scripts/geonames_import_postcodes.py \
+  --file data/geonames/allCountries.txt \
+  --table address-splitter-dev-geonames \
+  --region eu-central-1 \
+  --countries FR,CH,DE,US
+```
+
+3. After the import finishes, wake the libpostal pipeline again so the new data is available to users.
+
+If your shell cannot reach `download.geonames.org`, download the files elsewhere and copy them into `data/geonames/` before running the scripts.
+
 ## Quick auth + API test (Cognito user required)
 After you create a Cognito user (admin-created), you can verify auth + API reachability.
 
