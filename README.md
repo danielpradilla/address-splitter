@@ -28,6 +28,15 @@ Experiment playground for **parsing / splitting / geocoding postal addresses** a
 
 Each stored submission includes provenance so you always know which output came from which pipeline.
 
+## Planned next capability: Batch processing
+- Upload a file of addresses to S3 and process it as a batch job.
+- Reuse the same address-resolution pipelines used by the interactive UI.
+- Write an output file back to S3 with the original rows plus resolved/corrected address columns, confidence, warnings, and pipeline provenance.
+- Add a lightweight UI section for batch upload, status, and result download.
+- Current implementation status: shared resolver extracted, CSV contract defined, and backend batch handler scaffolded; infra wiring and UI are still pending.
+
+The implementation plan lives in [docs/SPECS.md](/Users/dpradilla/dev/address-splitter/docs/SPECS.md) and the work queue in [docs/TASKS.md](/Users/dpradilla/dev/address-splitter/docs/TASKS.md).
+
 ## Why
 Addresses are messy. This repo is meant to help compare:
 - accuracy
