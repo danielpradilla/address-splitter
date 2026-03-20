@@ -239,6 +239,62 @@ Resources:
         - AttributeName: user_sub
           KeyType: HASH
 
+  BatchJobsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AppName}-${Stage}-batch-jobs'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: PK
+          AttributeType: S
+        - AttributeName: SK
+          AttributeType: S
+        - AttributeName: GSI1PK
+          AttributeType: S
+        - AttributeName: GSI1SK
+          AttributeType: S
+      KeySchema:
+        - AttributeName: PK
+          KeyType: HASH
+        - AttributeName: SK
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: GSI1
+          KeySchema:
+            - AttributeName: GSI1PK
+              KeyType: HASH
+            - AttributeName: GSI1SK
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+
+  BatchInputBucket:
+    Type: AWS::S3::Bucket
+    DependsOn: BatchFunctionPermission
+    Properties:
+      BucketName: !Sub '${AppName}-${Stage}-batch-input-${AWS::AccountId}-${AWS::Region}'
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      NotificationConfiguration:
+        LambdaConfigurations:
+          - Event: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: input/
+            Function: !GetAtt BatchFunction.Arn
+
   GeonamesCitiesTable:
     Type: AWS::DynamoDB::Table
     Condition: UseGeonamesOffline
@@ -323,6 +379,8 @@ Resources:
                   - !GetAtt SubmissionsTable.Arn
                   - !Sub '${SubmissionsTable.Arn}/index/*'
                   - !GetAtt UserSettingsTable.Arn
+                  - !GetAtt BatchJobsTable.Arn
+                  - !Sub '${BatchJobsTable.Arn}/index/*'
                   - !If [UseGeonamesOffline, !GetAtt GeonamesLookupTable.Arn, !Ref AWS::NoValue]
                   - !If [UseGeonamesOffline, !Sub '${GeonamesLookupTable.Arn}/index/*', !Ref AWS::NoValue]
                   - !If [UseGeonamesOffline, !GetAtt GeonamesCitiesTable.Arn, !Ref AWS::NoValue]
@@ -366,6 +424,7 @@ Resources:
           RESULTS_RETENTION_DAYS: !Ref ResultsRetentionDays
           SUBMISSIONS_TABLE: !Ref SubmissionsTable
           USER_SETTINGS_TABLE: !Ref UserSettingsTable
+          BATCH_JOBS_TABLE: !Ref BatchJobsTable
           GEONAMES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesLookupTable, '']
           GEONAMES_CITIES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesCitiesTable, '']
           PLACE_INDEX_NAME: !If [UseAwsServices, !Ref PlaceIndex, '']
@@ -374,6 +433,93 @@ Resources:
             - !Sub '{{resolve:secretsmanager:${LoqateSecretId}:SecretString:LOQATE_API_KEY}}'
             - ''
       # Code defined above via container image (ImageUri)
+
+  BatchFunctionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: AddressSplitterBatch
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                  - s3:GetObjectTagging
+                Resource:
+                  - !Sub 'arn:aws:s3:::${AppName}-${Stage}-batch-input-${AWS::AccountId}-${AWS::Region}/*'
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:GetItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:Query
+                Resource:
+                  - !GetAtt BatchJobsTable.Arn
+                  - !Sub '${BatchJobsTable.Arn}/index/*'
+                  - !If [UseGeonamesOffline, !GetAtt GeonamesLookupTable.Arn, !Ref AWS::NoValue]
+                  - !If [UseGeonamesOffline, !Sub '${GeonamesLookupTable.Arn}/index/*', !Ref AWS::NoValue]
+                  - !If [UseGeonamesOffline, !GetAtt GeonamesCitiesTable.Arn, !Ref AWS::NoValue]
+              - Effect: Allow
+                Action:
+                  - bedrock:InvokeModel
+                  - bedrock:Converse
+                  - bedrock:ConverseStream
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - geo:SearchPlaceIndexForText
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - aws-marketplace:ViewSubscriptions
+                  - aws-marketplace:Subscribe
+                Resource: '*'
+
+  BatchFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      PackageType: Image
+      Code:
+        ImageUri: !Ref LambdaImageUri
+      ImageConfig:
+        Command: ["batch_handler.handler"]
+      Role: !GetAtt BatchFunctionRole.Arn
+      Timeout: 900
+      MemorySize: 7168
+      Environment:
+        Variables:
+          APP_NAME: !Ref AppName
+          STAGE: !Ref Stage
+          AWS_REGION_NAME: !Ref AWS::Region
+          RESULTS_RETENTION_DAYS: !Ref ResultsRetentionDays
+          BATCH_JOBS_TABLE: !Ref BatchJobsTable
+          GEONAMES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesLookupTable, '']
+          GEONAMES_CITIES_TABLE: !If [UseGeonamesOffline, !Ref GeonamesCitiesTable, '']
+          PLACE_INDEX_NAME: !If [UseAwsServices, !Ref PlaceIndex, '']
+          BATCH_OUTPUT_PREFIX: batch-output
+          BATCH_PIPELINES: bedrock_geonames,libpostal_geonames,aws_services,loqate
+          LOQATE_API_KEY: !If
+            - HasLoqateSecret
+            - !Sub '{{resolve:secretsmanager:${LoqateSecretId}:SecretString:LOQATE_API_KEY}}'
+            - ''
+
+  BatchFunctionPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref BatchFunction
+      Principal: s3.amazonaws.com
 
   ApiFunctionVersion:
     Type: AWS::Lambda::Version
@@ -491,6 +637,24 @@ Resources:
       AuthorizationType: JWT
       AuthorizerId: !Ref JwtAuthorizer
 
+  RouteBatchJobs:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /batch-jobs'
+      Target: !Sub 'integrations/${ApiIntegration}'
+      AuthorizationType: JWT
+      AuthorizerId: !Ref JwtAuthorizer
+
+  RouteBatchJobGet:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref HttpApi
+      RouteKey: 'GET /batch-jobs/{id}'
+      Target: !Sub 'integrations/${ApiIntegration}'
+      AuthorizationType: JWT
+      AuthorizerId: !Ref JwtAuthorizer
+
   ApiStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
@@ -527,3 +691,5 @@ Outputs:
   PlaceIndexName:
     Condition: UseAwsServices
     Value: !Ref PlaceIndex
+  BatchInputBucketName:
+    Value: !Ref BatchInputBucket

@@ -14,8 +14,9 @@ phases:
       - echo "Install phase (deps handled in Docker build)"
   pre_build:
     commands:
-      - echo "Running tests (placeholder)"
-      - python -m compileall backend/src || true
+      - echo "Running tests"
+      - python3 -m compileall backend/src
+      - python3 -m unittest discover -s backend/tests
   build:
     commands:
       - echo "BuildDeploy (CodeBuild)"

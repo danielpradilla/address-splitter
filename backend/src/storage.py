@@ -2,6 +2,7 @@ import time
 from typing import Any
 
 import boto3
+from boto3.dynamodb.conditions import Key
 
 
 def epoch_plus_days(days: int) -> int:
@@ -26,6 +27,10 @@ def submissions_table(name: str):
 
 
 def user_settings_table(name: str):
+    return boto3.resource("dynamodb").Table(name)
+
+
+def batch_jobs_table(name: str):
     return boto3.resource("dynamodb").Table(name)
 
 
@@ -75,7 +80,7 @@ def list_recent(*, table_name: str, user_sub: str, limit: int = 10) -> list[dict
     pk = f"USER#{user_sub}"
     resp = table.query(
         IndexName="GSI1",
-        KeyConditionExpression=boto3.dynamodb.conditions.Key("GSI1PK").eq(pk),
+        KeyConditionExpression=Key("GSI1PK").eq(pk),
         ScanIndexForward=False,
         Limit=limit,
     )
@@ -91,3 +96,77 @@ def set_preferred(*, table_name: str, user_sub: str, submission_id: str, preferr
         UpdateExpression="SET preferred_method = :p",
         ExpressionAttributeValues={":p": preferred_method},
     )
+
+
+def create_batch_job(
+    *,
+    table_name: str,
+    job_id: str,
+    user_sub: str,
+    created_at: str,
+    ttl: int,
+    input_bucket: str,
+    input_key: str,
+    config: dict | None = None,
+    status: str = "RECEIVED",
+):
+    table = batch_jobs_table(table_name)
+    item: dict[str, Any] = {
+        "PK": f"JOB#{job_id}",
+        "SK": "META",
+        "job_id": job_id,
+        "user_sub": user_sub,
+        "created_at": created_at,
+        "updated_at": created_at,
+        "ttl": ttl,
+        "status": status,
+        "input_bucket": input_bucket,
+        "input_key": input_key,
+        "config": config or {},
+        "GSI1PK": f"USER#{user_sub}",
+        "GSI1SK": f"TS#{created_at}#JOB#{job_id}",
+    }
+    table.put_item(Item=_clean_for_ddb(item))
+    return item
+
+
+def update_batch_job(
+    *,
+    table_name: str,
+    job_id: str,
+    updates: dict[str, Any],
+):
+    table = batch_jobs_table(table_name)
+    parts = []
+    expr_values: dict[str, Any] = {}
+    expr_names: dict[str, str] = {}
+    for idx, (key, value) in enumerate(updates.items(), start=1):
+        name_key = f"#n{idx}"
+        value_key = f":v{idx}"
+        expr_names[name_key] = key
+        expr_values[value_key] = _clean_for_ddb(value)
+        parts.append(f"{name_key} = {value_key}")
+
+    table.update_item(
+        Key={"PK": f"JOB#{job_id}", "SK": "META"},
+        UpdateExpression="SET " + ", ".join(parts),
+        ExpressionAttributeNames=expr_names,
+        ExpressionAttributeValues=expr_values,
+    )
+
+
+def get_batch_job(*, table_name: str, job_id: str) -> dict | None:
+    table = batch_jobs_table(table_name)
+    resp = table.get_item(Key={"PK": f"JOB#{job_id}", "SK": "META"})
+    return resp.get("Item")
+
+
+def list_batch_jobs(*, table_name: str, user_sub: str, limit: int = 20) -> list[dict]:
+    table = batch_jobs_table(table_name)
+    resp = table.query(
+        IndexName="GSI1",
+        KeyConditionExpression=Key("GSI1PK").eq(f"USER#{user_sub}"),
+        ScanIndexForward=False,
+        Limit=limit,
+    )
+    return resp.get("Items") or []
