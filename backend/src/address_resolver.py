@@ -233,32 +233,40 @@ def resolve_address(
                 }
                 continue
 
-            geo = geocode_with_amazon_location(
-                place_index_name=place_index,
-                text=raw_address,
-                country=country_code,
-                region=region,
-            )
-            comp = geo.get("components") or {}
-            per_req = float(pricing.get("location_usd_per_request") or 0)
-            cost = estimate_location_cost_usd(per_request=per_req)
-            results[pipeline] = {
-                "source": "amazon_location",
-                "geocode": "amazon_location",
-                "warnings": geo.get("warnings") or [],
-                "confidence": 0.8 if (geo.get("latitude") is not None and geo.get("longitude") is not None) else 0.0,
-                "latitude": geo.get("latitude"),
-                "longitude": geo.get("longitude"),
-                "geo_accuracy": geo.get("geo_accuracy", "none"),
-                "address_line1": comp.get("address_line1", ""),
-                "address_line2": comp.get("address_line2", ""),
-                "postcode": comp.get("postcode", ""),
-                "city": comp.get("city", ""),
-                "state_region": comp.get("state_region", ""),
-                "country_code": comp.get("country_code", country_code),
-                "raw": geo.get("raw"),
-                "cost": cost,
-            }
+            try:
+                geo = geocode_with_amazon_location(
+                    place_index_name=place_index,
+                    text=raw_address,
+                    country=country_code,
+                    region=region,
+                )
+                comp = geo.get("components") or {}
+                per_req = float(pricing.get("location_usd_per_request") or 0)
+                cost = estimate_location_cost_usd(per_request=per_req)
+                results[pipeline] = {
+                    "source": "amazon_location",
+                    "geocode": "amazon_location",
+                    "warnings": geo.get("warnings") or [],
+                    "confidence": 0.8 if (geo.get("latitude") is not None and geo.get("longitude") is not None) else 0.0,
+                    "latitude": geo.get("latitude"),
+                    "longitude": geo.get("longitude"),
+                    "geo_accuracy": geo.get("geo_accuracy", "none"),
+                    "address_line1": comp.get("address_line1", ""),
+                    "address_line2": comp.get("address_line2", ""),
+                    "postcode": comp.get("postcode", ""),
+                    "city": comp.get("city", ""),
+                    "state_region": comp.get("state_region", ""),
+                    "country_code": comp.get("country_code", country_code),
+                    "raw": geo.get("raw"),
+                    "cost": cost,
+                }
+            except Exception as e:
+                results[pipeline] = {
+                    "source": "amazon_location",
+                    "geocode": "amazon_location",
+                    "warnings": ["amazon_location_failed", str(e)],
+                    "confidence": 0.0,
+                }
         elif pipeline == "loqate":
             try:
                 out = loqate_resolve_address(
