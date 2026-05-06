@@ -16,12 +16,11 @@ function tdText(text, cls = '') {
   return td;
 }
 
-function tdAlerts(warnings, geocode) {
+function tdAlerts(warnings) {
   const td = document.createElement('td');
   td.className = 'cellAlerts';
   const notes = [];
   if (warnings && warnings.length) notes.push(...warnings);
-  if (geocode === 'geonames_offline') notes.push('geonames_offline');
   td.textContent = notes.join('; ');
   return td;
 }
@@ -66,7 +65,7 @@ export async function loadRecent() {
       tr.appendChild(tdText(pipeline?.state_region, cls));
       tr.appendChild(tdText(pipeline?.country_code, cls));
       if (modelId !== null) tr.appendChild(tdText(modelId, cls));
-      const alerts = tdAlerts(pipeline?.warnings, pipeline?.geocode);
+      const alerts = tdAlerts(pipeline?.warnings);
       alerts.classList.add(cls);
       tr.appendChild(alerts);
     }
