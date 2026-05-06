@@ -10,6 +10,11 @@ from geonames_lookup import lookup_city_best, lookup_city_to_postcode_best, look
 from loqate import resolve_address as loqate_resolve_address
 from schema import normalize_result
 
+try:
+    from iso3166 import countries
+except Exception:
+    countries = None
+
 
 DEFAULT_PIPELINES = [
     "bedrock_geonames",
@@ -24,18 +29,30 @@ def _enrich_with_geonames(
     norm: dict[str, Any],
     geonames_table: str,
     geonames_cities: str,
+    country_hint: str = "",
 ) -> dict[str, Any]:
+    cc = _country_to_iso2(norm.get("country_code") or country_hint)
+    if cc:
+        norm["country_code"] = cc
+
     if geonames_table and norm.get("country_code") and norm.get("postcode"):
         hit = lookup_postcode(
             table_name=geonames_table,
             country_code=norm.get("country_code", ""),
             postcode=norm.get("postcode", ""),
         )
-        if hit and hit.get("latitude") and hit.get("longitude"):
-            norm["latitude"] = hit.get("latitude")
-            norm["longitude"] = hit.get("longitude")
-            norm["geo_accuracy"] = "postcode"
-            norm["geonames_match"] = f"{hit.get('place_name', '')} {hit.get('postcode', '')}".strip()
+        if hit:
+            _apply_postcode_hit(norm, hit)
+
+    city_best = None
+    if geonames_cities and norm.get("country_code") and norm.get("city"):
+        city_best = lookup_city_best(
+            cities_table=geonames_cities,
+            country_code=norm.get("country_code", ""),
+            city=norm.get("city", ""),
+        )
+        if city_best:
+            _apply_city_hit(norm, city_best)
 
     if (
         geonames_table
@@ -43,22 +60,6 @@ def _enrich_with_geonames(
         and norm.get("country_code")
         and norm.get("city")
     ):
-        city_best = (
-            lookup_city_best(
-                cities_table=geonames_cities,
-                country_code=norm.get("country_code", ""),
-                city=norm.get("city", ""),
-            )
-            if geonames_cities
-            else None
-        )
-
-        if city_best and city_best.get("latitude") and city_best.get("longitude"):
-            norm["latitude"] = city_best.get("latitude")
-            norm["longitude"] = city_best.get("longitude")
-            norm["geo_accuracy"] = "city"
-            norm["geonames_match"] = f"{city_best.get('name', '')}".strip()
-
         pc_hit = lookup_city_to_postcode_best(
             postcodes_table=geonames_table,
             country_code=norm.get("country_code", ""),
@@ -67,15 +68,62 @@ def _enrich_with_geonames(
             city_lon=city_best.get("longitude") if city_best else None,
             limit=50,
         )
-        if pc_hit and pc_hit.get("postcode"):
-            norm["postcode"] = pc_hit.get("postcode")
-            norm["geonames_match"] = f"{pc_hit.get('place_name', '')} {pc_hit.get('postcode', '')}".strip()
-            if not norm.get("latitude") and pc_hit.get("latitude") and pc_hit.get("longitude"):
-                norm["latitude"] = pc_hit.get("latitude")
-                norm["longitude"] = pc_hit.get("longitude")
-                norm["geo_accuracy"] = "postcode"
+        if pc_hit:
+            _apply_postcode_hit(norm, pc_hit)
 
     return norm
+
+
+def _country_to_iso2(value: Any) -> str:
+    raw = str(value or "").strip()
+    if not raw:
+        return ""
+    if len(raw) == 2 and raw.isalpha():
+        return raw.upper()
+    if countries is None:
+        return ""
+    try:
+        return countries.get(raw).alpha2
+    except Exception:
+        pass
+    try:
+        return countries.get(raw.title()).alpha2
+    except Exception:
+        return ""
+
+
+def _apply_postcode_hit(norm: dict[str, Any], hit: dict[str, Any]) -> None:
+    if hit.get("country_code"):
+        norm["country_code"] = str(hit.get("country_code", "")).strip().upper()
+    if hit.get("postcode"):
+        norm["postcode"] = str(hit.get("postcode", "")).strip()
+    if hit.get("place_name"):
+        norm["city"] = str(hit.get("place_name", "")).strip()
+    if hit.get("admin1_name"):
+        norm["state_region"] = str(hit.get("admin1_name", "")).strip()
+    elif hit.get("admin1_code"):
+        norm["state_region"] = str(hit.get("admin1_code", "")).strip()
+    if hit.get("latitude") and hit.get("longitude"):
+        norm["latitude"] = hit.get("latitude")
+        norm["longitude"] = hit.get("longitude")
+        norm["geo_accuracy"] = "postcode"
+    norm["geonames_match"] = f"{hit.get('place_name', '')} {hit.get('postcode', '')}".strip()
+
+
+def _apply_city_hit(norm: dict[str, Any], hit: dict[str, Any]) -> None:
+    if hit.get("country_code"):
+        norm["country_code"] = str(hit.get("country_code", "")).strip().upper()
+    canonical_city = hit.get("name") or hit.get("ascii_name")
+    if canonical_city:
+        norm["city"] = str(canonical_city).strip()
+    if hit.get("admin1_code") and not norm.get("state_region"):
+        norm["state_region"] = str(hit.get("admin1_code", "")).strip()
+    if hit.get("latitude") and hit.get("longitude") and not norm.get("geo_accuracy"):
+        norm["latitude"] = hit.get("latitude")
+        norm["longitude"] = hit.get("longitude")
+        norm["geo_accuracy"] = "city"
+    if not norm.get("geonames_match"):
+        norm["geonames_match"] = str(canonical_city or "").strip()
 
 
 def resolve_address(
@@ -202,6 +250,7 @@ def resolve_address(
                     norm=norm,
                     geonames_table=geonames_table,
                     geonames_cities=geonames_cities,
+                    country_hint=parsed.get("country_name", ""),
                 )
                 norm.update(
                     {

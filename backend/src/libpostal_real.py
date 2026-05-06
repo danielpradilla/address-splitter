@@ -25,6 +25,7 @@ def parse_with_libpostal(*, country_code: str, raw_address: str) -> dict[str, An
     city = " ".join(_pick(parts, "city")).strip()
     state = " ".join(_pick(parts, "state")).strip()
     postcode = " ".join(_pick(parts, "postcode")).strip()
+    country = " ".join(_pick(parts, "country")).strip()
     neighborhood = " ".join(_pick(parts, "suburb")).strip() or " ".join(_pick(parts, "neighbourhood")).strip()
 
     company = " ".join(_pick(parts, "house")).strip() or " ".join(_pick(parts, "building")).strip()
@@ -53,6 +54,7 @@ def parse_with_libpostal(*, country_code: str, raw_address: str) -> dict[str, An
 
     return {
         "country_code": (country_code or "").strip().upper(),
+        "country_name": country,
         "address_line1": address_line1,
         "address_line2": address_line2,
         "postcode": postcode,

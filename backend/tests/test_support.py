@@ -61,3 +61,16 @@ if "boto3" not in sys.modules:
     sys.modules["boto3"] = boto3
     sys.modules["boto3.dynamodb"] = dynamodb
     sys.modules["boto3.dynamodb.conditions"] = conditions
+
+
+if "postal.parser" not in sys.modules:
+    postal = types.ModuleType("postal")
+    parser = types.ModuleType("postal.parser")
+
+    def _parse_address(raw_address):
+        return []
+
+    parser.parse_address = _parse_address
+    postal.parser = parser
+    sys.modules["postal"] = postal
+    sys.modules["postal.parser"] = parser
