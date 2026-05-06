@@ -67,6 +67,13 @@ textarea { resize: vertical; }
   gap: 10px;
 }
 
+.grid3 label {
+  display: grid;
+  grid-template-rows: 2.4em auto;
+  align-items: start;
+  margin: 10px 0 0;
+}
+
 @media (max-width: 900px) {
   .grid3 { grid-template-columns: 1fr; }
 }
@@ -101,11 +108,11 @@ textarea { resize: vertical; }
 }
 
 .badge {
-  padding: 8px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(34,34,59,0.25);
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,78,152,0.25);
   color: var(--ink);
-  background: rgba(242,233,228,0.6);
+  background: #ffffff;
 }
 
 .error {
